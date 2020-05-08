@@ -1568,7 +1568,9 @@ const {
   reduceRightWithIndex,
   reduceWithIndex,
   compact,
-  separate
+  separate,
+  traverse,
+  sequence
 } = pipeable(readonlyArray)
 
 export {
@@ -1675,5 +1677,13 @@ export {
   /**
    * @since 2.5.0
    */
-  separate
+  separate,
+  /**
+   * @since 2.5.4
+   */
+  traverse,
+  /**
+   * @since 2.5.4
+   */
+  sequence
 }

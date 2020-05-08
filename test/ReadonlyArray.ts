@@ -9,6 +9,7 @@ import * as I from '../src/Identity'
 import * as M from '../src/Monoid'
 import * as O from '../src/Option'
 import * as Ord from '../src/Ord'
+import { pipe } from '../src/pipeable'
 import * as _ from '../src/ReadonlyArray'
 import { showString } from '../src/Show'
 
@@ -819,5 +820,26 @@ describe('ReadonlyArray', () => {
     const bs = _.toArray(as)
     assert.deepStrictEqual(bs, as)
     assert.notStrictEqual(bs, as)
+  })
+
+  describe('pipeable', () => {
+    it('traverse', () => {
+      const tfanone: ReadonlyArray<number> = [1, 2]
+      const f = (n: number): O.Option<number> => (n % 2 === 0 ? O.none : O.some(n))
+      const fasnone = pipe(tfanone, _.traverse(O.option)(f))
+      assert.deepStrictEqual(O.isNone(fasnone), true)
+      const tfa: ReadonlyArray<number> = [1, 3]
+      const fas = pipe(tfa, _.traverse(O.option)(f))
+      assert.deepStrictEqual(fas, O.some([1, 3]))
+
+      const tfaLeft: ReadonlyArray<number> = [1, 2]
+      const feither = (n: number): E.Either<string, number> => (n % 2 === 0 ? E.left('nope') : E.right(n))
+      const fasLeft = pipe(tfaLeft, _.traverse(E.either)(feither))
+      assert.deepStrictEqual(fasLeft, E.left('nope'))
+
+      const tfaRight: ReadonlyArray<number> = [1, 3]
+      const fasRight = pipe(tfaRight, _.traverse(E.either)(feither))
+      assert.deepStrictEqual(fasRight, E.right([1, 3]))
+    })
   })
 })
