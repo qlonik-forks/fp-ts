@@ -2,6 +2,7 @@
  * @since 2.0.0
  */
 import { Alt, Alt1, Alt2, Alt2C, Alt3, Alt4, Alt3C } from './Alt'
+import { Applicative, Applicative1, Applicative2, Applicative2C, Applicative3, Applicative3C } from './Applicative'
 import { Apply, Apply1, Apply2, Apply2C, Apply3, Apply4, Apply3C } from './Apply'
 import { Bifunctor, Bifunctor2, Bifunctor3, Bifunctor4, Bifunctor3C } from './Bifunctor'
 import { Chain, Chain1, Chain2, Chain2C, Chain3, Chain4, Chain3C } from './Chain'
@@ -88,6 +89,18 @@ import {
   Semigroupoid4,
   Semigroupoid3C
 } from './Semigroupoid'
+import {
+  Sequence,
+  Sequence1,
+  Traversable,
+  Traversable1,
+  Traversable2,
+  Traversable3,
+  Traversable2C,
+  Sequence2,
+  Sequence2C,
+  Sequence3
+} from './Traversable'
 
 /**
  * @since 2.0.0
@@ -1288,6 +1301,120 @@ export interface PipeableMonadThrow4<F extends URIS4> {
   }
 }
 
+/**
+ * @since 2.5.5
+ */
+export interface PipeableTraversable<T> {
+  readonly traverse: {
+    <F extends URIS3>(F: Applicative3<F>): <A, R, E, B>(
+      f: (a: A) => Kind3<F, R, E, B>
+    ) => (ta: HKT<T, A>) => Kind3<F, R, E, HKT<T, B>>
+    <F extends URIS3, E>(F: Applicative3C<F, E>): <A, R, B>(
+      f: (a: A) => Kind3<F, R, E, B>
+    ) => (ta: HKT<T, A>) => Kind3<F, R, E, HKT<T, B>>
+    <F extends URIS2>(F: Applicative2<F>): <A, E, B>(
+      f: (a: A) => Kind2<F, E, B>
+    ) => (ta: HKT<T, A>) => Kind2<F, E, HKT<T, B>>
+    <F extends URIS2, E>(F: Applicative2C<F, E>): <A, B>(
+      f: (a: A) => Kind2<F, E, B>
+    ) => (ta: HKT<T, A>) => Kind2<F, E, HKT<T, B>>
+    <F extends URIS>(F: Applicative1<F>): <A, B>(f: (a: A) => Kind<F, B>) => (ta: HKT<T, A>) => Kind<F, HKT<T, B>>
+    <F>(F: Applicative<F>): <A, B>(f: (a: A) => HKT<F, B>) => (ta: HKT<T, A>) => HKT<F, HKT<T, B>>
+  }
+  readonly sequence: Sequence<T>
+}
+
+/**
+ * @since 2.5.5
+ */
+export interface PipeableTraversable1<T extends URIS> {
+  readonly traverse: {
+    <F extends URIS3>(F: Applicative3<F>): <A, R, E, B>(
+      f: (a: A) => Kind3<F, R, E, B>
+    ) => (ta: Kind<T, A>) => Kind3<F, R, E, Kind<T, B>>
+    <F extends URIS3, E>(F: Applicative3C<F, E>): <A, R, B>(
+      f: (a: A) => Kind3<F, R, E, B>
+    ) => (ta: Kind<T, A>) => Kind3<F, R, E, Kind<T, B>>
+    <F extends URIS2>(F: Applicative2<F>): <A, E, B>(
+      f: (a: A) => Kind2<F, E, B>
+    ) => (ta: Kind<T, A>) => Kind2<F, E, Kind<T, B>>
+    <F extends URIS2, E>(F: Applicative2C<F, E>): <A, B>(
+      f: (a: A) => Kind2<F, E, B>
+    ) => (ta: Kind<T, A>) => Kind2<F, E, Kind<T, B>>
+    <F extends URIS>(F: Applicative1<F>): <A, B>(f: (a: A) => Kind<F, B>) => (ta: Kind<T, A>) => Kind<F, Kind<T, B>>
+    <F>(F: Applicative<F>): <A, B>(f: (a: A) => HKT<F, B>) => (ta: Kind<T, A>) => HKT<F, Kind<T, B>>
+  }
+  readonly sequence: Sequence1<T>
+}
+
+/**
+ * @since 2.5.5
+ */
+export interface PipeableTraversable2<T extends URIS2> {
+  readonly traverse: {
+    <F extends URIS3>(F: Applicative3<F>): <A, R, FE, B>(
+      f: (a: A) => Kind3<F, R, FE, B>
+    ) => <TE>(ta: Kind2<T, TE, A>) => Kind3<F, R, FE, Kind2<T, TE, B>>
+    <F extends URIS2>(F: Applicative2<F>): <A, FE, B>(
+      f: (a: A) => Kind2<F, FE, B>
+    ) => <TE>(ta: Kind2<T, TE, A>) => Kind2<F, FE, Kind2<T, TE, B>>
+    <F extends URIS2, FE>(F: Applicative2C<F, FE>): <A, B>(
+      f: (a: A) => Kind2<F, FE, B>
+    ) => <TE>(ta: Kind2<T, TE, A>) => Kind2<F, FE, Kind2<T, TE, B>>
+    <F extends URIS>(F: Applicative1<F>): <A, B>(
+      f: (a: A) => Kind<F, B>
+    ) => <E>(ta: Kind2<T, E, A>) => Kind<F, Kind2<T, E, B>>
+    <F>(F: Applicative<F>): <A, B>(f: (a: A) => HKT<F, B>) => <E>(ta: Kind2<T, E, A>) => HKT<F, Kind2<T, E, B>>
+  }
+  readonly sequence: Sequence2<T>
+}
+
+/**
+ * @since 2.5.5
+ */
+export interface PipeableTraversable2C<T extends URIS2, TE> {
+  readonly traverse: {
+    <F extends URIS3>(F: Applicative3<F>): <A, R, FE, B>(
+      f: (a: A) => Kind3<F, R, FE, B>
+    ) => (ta: Kind2<T, TE, A>) => Kind3<F, R, FE, Kind2<T, TE, B>>
+    <F extends URIS2>(F: Applicative2<F>): <A, FE, B>(
+      f: (a: A) => Kind2<F, FE, B>
+    ) => (ta: Kind2<T, TE, A>) => Kind2<F, FE, Kind2<T, TE, B>>
+    <F extends URIS2, FE>(F: Applicative2C<F, FE>): <A, B>(
+      f: (a: A) => Kind2<F, FE, B>
+    ) => (ta: Kind2<T, TE, A>) => Kind2<F, FE, Kind2<T, TE, B>>
+    <F extends URIS>(F: Applicative1<F>): <A, B>(
+      f: (a: A) => Kind<F, B>
+    ) => (ta: Kind2<T, TE, A>) => Kind<F, Kind2<T, TE, B>>
+    <F>(F: Applicative<F>): <A, B>(f: (a: A) => HKT<F, B>) => (ta: Kind2<T, TE, A>) => HKT<F, Kind2<T, TE, B>>
+  }
+  readonly sequence: Sequence2C<T, TE>
+}
+
+/**
+ * @since 2.5.5
+ */
+export interface PipeableTraversable3<T extends URIS3> {
+  readonly traverse: {
+    <F extends URIS3>(F: Applicative3<F>): <A, FR, FE, B>(
+      f: (a: A) => Kind3<F, FR, FE, B>
+    ) => <TR, TE>(ta: Kind3<T, TR, TE, A>) => Kind3<F, FR, FE, Kind3<T, TR, TE, B>>
+    <F extends URIS2>(F: Applicative2<F>): <A, FE, B>(
+      f: (a: A) => Kind2<F, FE, B>
+    ) => <TR, TE>(ta: Kind3<T, TR, TE, A>) => Kind2<F, FE, Kind3<T, TR, TE, B>>
+    <F extends URIS2, FE>(F: Applicative2C<F, FE>): <A, B>(
+      f: (a: A) => Kind2<F, FE, B>
+    ) => <TR, TE>(ta: Kind3<T, TR, TE, A>) => Kind2<F, FE, Kind3<T, TR, TE, B>>
+    <F extends URIS>(F: Applicative1<F>): <A, B>(
+      f: (a: A) => Kind<F, B>
+    ) => <TR, TE>(ta: Kind3<T, TR, TE, A>) => Kind<F, Kind3<T, TR, TE, B>>
+    <F>(F: Applicative<F>): <A, B>(
+      f: (a: A) => HKT<F, B>
+    ) => <TR, TE>(ta: Kind3<T, TR, TE, A>) => HKT<F, Kind3<T, TR, TE, B>>
+  }
+  readonly sequence: Sequence3<T>
+}
+
 const isFunctor = <F>(I: any): I is Functor<F> => typeof I.map === 'function'
 const isContravariant = <F>(I: any): I is Contravariant<F> => typeof I.contramap === 'function'
 const isFunctorWithIndex = <F>(I: any): I is FunctorWithIndex<F, unknown> => typeof I.mapWithIndex === 'function'
@@ -1305,6 +1432,7 @@ const isFilterableWithIndex = <F>(I: any): I is FilterableWithIndex<F, unknown> 
 const isProfunctor = <F>(I: any): I is Profunctor<F> => typeof I.promap === 'function'
 const isSemigroupoid = <F>(I: any): I is Semigroupoid<F> => typeof I.compose === 'function'
 const isMonadThrow = <F>(I: any): I is MonadThrow<F> => typeof I.throwError === 'function'
+const isTraversable = <F>(I: any): I is Traversable<F> => typeof I.traverse === 'function'
 
 /**
  * @since 2.0.0
@@ -1366,7 +1494,8 @@ export function pipeable<F extends URIS3, I>(
     : {}) &
   (I extends Profunctor3<F> ? PipeableProfunctor3<F> : {}) &
   (I extends Semigroupoid3<F> ? PipeableSemigroupoid3<F> : {}) &
-  (I extends MonadThrow3<F> ? PipeableMonadThrow3<F> : {})
+  (I extends MonadThrow3<F> ? PipeableMonadThrow3<F> : {}) &
+  (I extends Traversable3<F> ? PipeableTraversable3<F> : {})
 export function pipeable<F extends URIS3, I, E>(
   I: { readonly URI: F } & I
 ): (I extends Chain3C<F, E>
@@ -1423,7 +1552,8 @@ export function pipeable<F extends URIS2, I, E>(
     : {}) &
   (I extends Profunctor2C<F, E> ? PipeableProfunctor2C<F, E> : {}) &
   (I extends Semigroupoid2C<F, E> ? PipeableSemigroupoid2C<F, E> : {}) &
-  (I extends MonadThrow2C<F, E> ? PipeableMonadThrow2C<F, E> : {})
+  (I extends MonadThrow2C<F, E> ? PipeableMonadThrow2C<F, E> : {}) &
+  (I extends Traversable2C<F, E> ? PipeableTraversable2C<F, E> : {})
 export function pipeable<F extends URIS2, I>(
   I: { readonly URI: F } & I
 ): (I extends Chain2<F>
@@ -1452,7 +1582,8 @@ export function pipeable<F extends URIS2, I>(
     : {}) &
   (I extends Profunctor2<F> ? PipeableProfunctor2<F> : {}) &
   (I extends Semigroupoid2<F> ? PipeableSemigroupoid2<F> : {}) &
-  (I extends MonadThrow2<F> ? PipeableMonadThrow2<F> : {})
+  (I extends MonadThrow2<F> ? PipeableMonadThrow2<F> : {}) &
+  (I extends Traversable2<F> ? PipeableTraversable2<F> : {})
 export function pipeable<F extends URIS, I>(
   I: { readonly URI: F } & I
 ): (I extends Chain1<F>
@@ -1478,7 +1609,8 @@ export function pipeable<F extends URIS, I>(
     : I extends Compactable1<F>
     ? PipeableCompactable1<F>
     : {}) &
-  (I extends MonadThrow1<F> ? PipeableMonadThrow1<F> : {})
+  (I extends MonadThrow1<F> ? PipeableMonadThrow1<F> : {}) &
+  (I extends Traversable1<F> ? PipeableTraversable1<F> : {})
 export function pipeable<F, I>(
   I: { readonly URI: F } & I
 ): (I extends Chain<F>
@@ -1507,7 +1639,8 @@ export function pipeable<F, I>(
     : {}) &
   (I extends Profunctor<F> ? PipeableProfunctor<F> : {}) &
   (I extends Semigroupoid<F> ? PipeableSemigroupoid<F> : {}) &
-  (I extends MonadThrow<F> ? PipeableMonadThrow<F> : {})
+  (I extends MonadThrow<F> ? PipeableMonadThrow<F> : {}) &
+  (I extends Traversable<F> ? PipeableTraversable<F> : {})
 export function pipeable<F, I>(I: { readonly URI: F } & I): Record<string, unknown> {
   const r: any = {}
   if (isFunctor<F>(I)) {
@@ -1642,6 +1775,14 @@ export function pipeable<F, I>(I: { readonly URI: F } & I): Record<string, unkno
     r.fromEither = fromEither
     r.fromPredicate = fromPredicate
     r.filterOrElse = filterOrElse
+  }
+  if (isTraversable<F>(I)) {
+    const traverse: PipeableTraversable<F>['traverse'] = <G>(Ap: Applicative<G>) => {
+      const traverseG = I.traverse(Ap)
+      return <A, B>(f: (a: A) => HKT<G, B>) => (ta: HKT<F, A>) => traverseG(ta, f)
+    }
+    r.traverse = traverse
+    r.sequence = I.sequence
   }
   return r
 }
