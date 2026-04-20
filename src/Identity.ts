@@ -4,14 +4,14 @@
 import { Alt1 } from './Alt'
 import { Applicative as ApplicativeHKT, Applicative1 } from './Applicative'
 import { apFirst as apFirst_, Apply1, apS as apS_, apSecond as apSecond_ } from './Apply'
-import { bind as bind_, Chain1, chainFirst as chainFirst_ } from './Chain'
+import { bind as bind_, Chain1, tap as tap_ } from './Chain'
 import { ChainRec1, tailRec } from './ChainRec'
 import { Comonad1 } from './Comonad'
 import { Eq } from './Eq'
 import { Extend1 } from './Extend'
 import { Foldable1 } from './Foldable'
-import { identity as id, pipe } from './function'
-import { bindTo as bindTo_, flap as flap_, Functor1 } from './Functor'
+import { dual, identity as id, pipe } from './function'
+import { bindTo as bindTo_, flap as flap_, Functor1, let as let__ } from './Functor'
 import { HKT } from './HKT'
 import * as _ from './internal'
 import { Monad1 } from './Monad'
@@ -30,13 +30,8 @@ import { PipeableTraverse1, Traversable1 } from './Traversable'
  */
 export type Identity<A> = A
 
-// -------------------------------------------------------------------------------------
-// non-pipeables
-// -------------------------------------------------------------------------------------
-
 const _map: Monad1<URI>['map'] = (fa, f) => pipe(fa, map(f))
 const _ap: Monad1<URI>['ap'] = (fab, fa) => pipe(fab, ap(fa))
-const _chain: Monad1<URI>['chain'] = (ma, f) => pipe(ma, chain(f))
 /* istanbul ignore next */
 const _reduce: Foldable1<URI>['reduce'] = (fa, b, f) => pipe(fa, reduce(b, f))
 /* istanbul ignore next */
@@ -56,43 +51,36 @@ const _traverse = <F>(
 }
 const _chainRec: ChainRec1<URI>['chainRec'] = tailRec
 
-// -------------------------------------------------------------------------------------
-// type class members
-// -------------------------------------------------------------------------------------
-
 /**
  * `map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
  * use the type constructor `F` to represent some computational context.
  *
- * @category Functor
+ * @category mapping
  * @since 2.0.0
  */
 export const map: <A, B>(f: (a: A) => B) => (fa: Identity<A>) => Identity<B> = (f) => (fa) => f(fa)
 
 /**
- * Apply a function to an argument under a type constructor.
- *
- * @category Apply
  * @since 2.0.0
  */
 export const ap: <A>(fa: Identity<A>) => <B>(fab: Identity<(a: A) => B>) => Identity<B> = (fa) => (fab) => fab(fa)
 
 /**
- * @category Pointed
+ * @category constructors
  * @since 2.0.0
  */
-export const of: Pointed1<URI>['of'] = id
+export const of: <A>(a: A) => Identity<A> = id
 
 /**
- * Composes computations in sequence, using the return value of one computation to determine the next computation.
- *
- * @category Monad
- * @since 2.0.0
+ * @category sequencing
+ * @since 2.14.0
  */
-export const chain: <A, B>(f: (a: A) => Identity<B>) => (ma: Identity<A>) => Identity<B> = (f) => (ma) => f(ma)
+export const flatMap: {
+  <A, B>(f: (a: A) => Identity<B>): (ma: Identity<A>) => Identity<B>
+  <A, B>(ma: Identity<A>, f: (a: A) => Identity<B>): Identity<B>
+} = /*#__PURE__*/ dual(2, <A, B>(ma: Identity<A>, f: (a: A) => Identity<B>): Identity<B> => f(ma))
 
 /**
- * @category Extend
  * @since 2.0.0
  */
 export const extend: <A, B>(f: (wa: Identity<A>) => B) => (wa: Identity<A>) => Identity<B> = (f) => (wa) => f(wa)
@@ -104,63 +92,60 @@ export const extend: <A, B>(f: (wa: Identity<A>) => B) => (wa: Identity<A>) => I
 export const extract: <A>(wa: Identity<A>) => A = id
 
 /**
- * Derivable from `Extend`.
- *
- * @category combinators
  * @since 2.0.0
  */
-export const duplicate: <A>(ma: Identity<A>) => Identity<Identity<A>> =
-  /*#__PURE__*/
-  extend(id)
+export const duplicate: <A>(ma: Identity<A>) => Identity<Identity<A>> = /*#__PURE__*/ extend(id)
 
 /**
- * Derivable from `Chain`.
- *
- * @category combinators
+ * @category sequencing
  * @since 2.0.0
  */
-export const flatten: <A>(mma: Identity<Identity<A>>) => Identity<A> =
-  /*#__PURE__*/
-  chain(id)
+export const flatten: <A>(mma: Identity<Identity<A>>) => Identity<A> = /*#__PURE__*/ flatMap(id)
 
 /**
- * @category Foldable
+ * @category folding
  * @since 2.0.0
  */
 export const reduce: <A, B>(b: B, f: (b: B, a: A) => B) => (fa: Identity<A>) => B = (b, f) => (fa) => f(b, fa)
 
 /**
- * @category Foldable
+ * @category folding
  * @since 2.0.0
  */
 export const foldMap: <M>(M: Monoid<M>) => <A>(f: (a: A) => M) => (fa: Identity<A>) => M = () => (f) => (fa) => f(fa)
 
 /**
- * @category Foldable
+ * @category folding
  * @since 2.0.0
  */
 export const reduceRight: <A, B>(b: B, f: (a: A, b: B) => B) => (fa: Identity<A>) => B = (b, f) => (fa) => f(fa, b)
 
 /**
+ * @category traversing
  * @since 2.6.3
  */
-export const traverse: PipeableTraverse1<URI> = <F>(
-  F: ApplicativeHKT<F>
-): (<A, B>(f: (a: A) => HKT<F, B>) => (ta: Identity<A>) => HKT<F, Identity<B>>) => (f) => (ta) => F.map(f(ta), id)
+export const traverse: PipeableTraverse1<URI> =
+  <F>(F: ApplicativeHKT<F>): (<A, B>(f: (a: A) => HKT<F, B>) => (ta: Identity<A>) => HKT<F, Identity<B>>) =>
+  (f) =>
+  (ta) =>
+    F.map(f(ta), id)
 
 /**
+ * @category traversing
  * @since 2.6.3
  */
-export const sequence: Traversable1<URI>['sequence'] = <F>(F: ApplicativeHKT<F>) => <A>(
-  ta: Identity<HKT<F, A>>
-): HKT<F, Identity<A>> => {
-  return F.map(ta, id)
-}
+export const sequence: Traversable1<URI>['sequence'] =
+  <F>(F: ApplicativeHKT<F>) =>
+  <A>(ta: Identity<HKT<F, A>>): HKT<F, Identity<A>> => {
+    return F.map(ta, id)
+  }
 
 /**
  * Less strict version of [`alt`](#alt).
  *
- * @category Alt
+ * The `W` suffix (short for **W**idening) means that the return types will be merged.
+ *
+ * @category error handling
  * @since 2.9.0
  */
 export const altW: <B>(that: () => Identity<B>) => <A>(fa: Identity<A>) => Identity<A | B> = () => id
@@ -169,23 +154,19 @@ export const altW: <B>(that: () => Identity<B>) => <A>(fa: Identity<A>) => Ident
  * Identifies an associative operation on a type constructor. It is similar to `Semigroup`, except that it applies to
  * types of kind `* -> *`.
  *
- * @category Alt
+ * @category error handling
  * @since 2.0.0
  */
 export const alt: <A>(that: () => Identity<A>) => (fa: Identity<A>) => Identity<A> = altW
 
-// -------------------------------------------------------------------------------------
-// instances
-// -------------------------------------------------------------------------------------
-
 /**
- * @category instances
+ * @category type lambdas
  * @since 2.0.0
  */
 export const URI = 'Identity'
 
 /**
- * @category instances
+ * @category type lambdas
  * @since 2.0.0
  */
 export type URI = typeof URI
@@ -218,14 +199,10 @@ export const Functor: Functor1<URI> = {
 }
 
 /**
- * Derivable from `Functor`.
- *
- * @category combinators
+ * @category mapping
  * @since 2.10.0
  */
-export const flap =
-  /*#__PURE__*/
-  flap_(Functor)
+export const flap = /*#__PURE__*/ flap_(Functor)
 
 /**
  * @category instances
@@ -249,26 +226,16 @@ export const Apply: Apply1<URI> = {
 /**
  * Combine two effectful actions, keeping only the result of the first.
  *
- * Derivable from `Apply`.
- *
- * @category combinators
  * @since 2.0.0
  */
-export const apFirst =
-  /*#__PURE__*/
-  apFirst_(Apply)
+export const apFirst = /*#__PURE__*/ apFirst_(Apply)
 
 /**
  * Combine two effectful actions, keeping only the result of the second.
  *
- * Derivable from `Apply`.
- *
- * @category combinators
  * @since 2.0.0
  */
-export const apSecond =
-  /*#__PURE__*/
-  apSecond_(Apply)
+export const apSecond = /*#__PURE__*/ apSecond_(Apply)
 
 /**
  * @category instances
@@ -289,7 +256,7 @@ export const Chain: Chain1<URI> = {
   URI,
   map: _map,
   ap: _ap,
-  chain: _chain
+  chain: flatMap
 }
 
 /**
@@ -301,21 +268,28 @@ export const Monad: Monad1<URI> = {
   map: _map,
   ap: _ap,
   of,
-  chain: _chain
+  chain: flatMap
 }
 
 /**
  * Composes computations in sequence, using the return value of one computation to determine the next computation and
  * keeping only the result of the first.
  *
- * Derivable from `Chain`.
- *
  * @category combinators
+ * @since 2.16.7
+ */
+export const tap: {
+  <A, _>(self: Identity<A>, f: (a: A) => Identity<_>): Identity<A>
+  <A, _>(f: (a: A) => Identity<_>): (self: Identity<A>) => Identity<A>
+} = /*#__PURE__*/ dual(2, tap_(Chain))
+
+/**
+ * Alias of `tap`
+ *
+ * @category legacy
  * @since 2.0.0
  */
-export const chainFirst =
-  /*#__PURE__*/
-  chainFirst_(Chain)
+export const chainFirst: <A, B>(f: (a: A) => B) => (first: A) => A = tap
 
 /**
  * @category instances
@@ -371,7 +345,7 @@ export const ChainRec: ChainRec1<URI> = {
   URI,
   map: _map,
   ap: _ap,
-  chain: _chain,
+  chain: flatMap,
   chainRec: _chainRec
 }
 
@@ -380,45 +354,61 @@ export const ChainRec: ChainRec1<URI> = {
 // -------------------------------------------------------------------------------------
 
 /**
+ * @category do notation
  * @since 2.9.0
  */
-export const Do: Identity<{}> =
-  /*#__PURE__*/
-  of(_.emptyRecord)
+export const Do: Identity<{}> = /*#__PURE__*/ of(_.emptyRecord)
 
 /**
+ * @category do notation
  * @since 2.8.0
  */
-export const bindTo =
-  /*#__PURE__*/
-  bindTo_(Functor)
+export const bindTo = /*#__PURE__*/ bindTo_(Functor)
+
+const let_ = /*#__PURE__*/ let__(Functor)
+
+export {
+  /**
+   * @category do notation
+   * @since 2.13.0
+   */
+  let_ as let
+}
 
 /**
+ * @category do notation
  * @since 2.8.0
  */
-export const bind =
-  /*#__PURE__*/
-  bind_(Chain)
+export const bind = /*#__PURE__*/ bind_(Chain)
+
+/**
+ * @category do notation
+ * @since 2.8.0
+ */
+export const apS = /*#__PURE__*/ apS_(Apply)
 
 // -------------------------------------------------------------------------------------
-// pipeable sequence S
+// legacy
 // -------------------------------------------------------------------------------------
 
 /**
- * @since 2.8.0
+ * Alias of `flatMap`.
+ *
+ * @category legacy
+ * @since 2.0.0
  */
-export const apS =
-  /*#__PURE__*/
-  apS_(Apply)
+export const chain: <A, B>(f: (a: A) => Identity<B>) => (ma: Identity<A>) => Identity<B> = flatMap
 
 // -------------------------------------------------------------------------------------
 // deprecated
 // -------------------------------------------------------------------------------------
 
 /**
- * Use small, specific instances instead.
+ * This instance is deprecated, use small, specific instances instead.
+ * For example if a function needs a `Functor` instance, pass `I.Functor` instead of `I.identity`
+ * (where `I` is from `import I from 'fp-ts/Identity'`)
  *
- * @category instances
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -427,7 +417,7 @@ export const identity: Monad1<URI> & Foldable1<URI> & Traversable1<URI> & Alt1<U
   map: _map,
   ap: _ap,
   of,
-  chain: _chain,
+  chain: flatMap,
   reduce: _reduce,
   foldMap: _foldMap,
   reduceRight: _reduceRight,

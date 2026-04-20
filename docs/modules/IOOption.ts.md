@@ -1,10 +1,15 @@
 ---
 title: IOOption.ts
-nav_order: 53
+nav_order: 52
 parent: Modules
 ---
 
 ## IOOption overview
+
+`IOOption<A>` represents a synchronous computation that either yields a value of type `A` or nothing.
+
+If you want to represent a synchronous computation that never fails, please see `IO`.
+If you want to represent a synchronous computation that may fail, please see `IOEither`.
 
 Added in v2.12.0
 
@@ -12,102 +17,385 @@ Added in v2.12.0
 
 <h2 class="text-delta">Table of contents</h2>
 
-- [Alt](#alt)
+- [combinators](#combinators)
+  - [tap](#tap)
+  - [tapEither](#tapeither)
+  - [tapIO](#tapio)
+- [constructors](#constructors)
+  - [none](#none)
+  - [of](#of)
+  - [some](#some)
+- [conversions](#conversions)
+  - [fromEither](#fromeither)
+  - [fromIO](#fromio)
+  - [fromIOEither](#fromioeither)
+  - [fromNullable](#fromnullable)
+  - [fromOption](#fromoption)
+  - [toNullable](#tonullable)
+  - [toUndefined](#toundefined)
+- [do notation](#do-notation)
+  - [Do](#do)
+  - [apS](#aps)
+  - [bind](#bind)
+  - [bindTo](#bindto)
+  - [guard](#guard)
+  - [let](#let)
+- [error handling](#error-handling)
   - [alt](#alt)
   - [altW](#altw)
-- [Apply](#apply)
-  - [ap](#ap)
-- [Compactable](#compactable)
+  - [getOrElse](#getorelse)
+  - [getOrElseW](#getorelsew)
+- [filtering](#filtering)
   - [compact](#compact)
-  - [separate](#separate)
-- [Filterable](#filterable)
   - [filter](#filter)
   - [filterMap](#filtermap)
   - [partition](#partition)
   - [partitionMap](#partitionmap)
-- [Functor](#functor)
-  - [map](#map)
-- [Monad](#monad)
+  - [separate](#separate)
+- [instances](#instances)
+  - [Alt](#alt)
+  - [Alternative](#alternative)
+  - [Applicative](#applicative)
+  - [Apply](#apply)
+  - [Chain](#chain)
+  - [Compactable](#compactable)
+  - [Filterable](#filterable)
+  - [FromEither](#fromeither)
+  - [FromIO](#fromio)
+  - [Functor](#functor)
+  - [Monad](#monad)
+  - [MonadIO](#monadio)
+  - [Pointed](#pointed)
+  - [Zero](#zero)
+- [legacy](#legacy)
   - [chain](#chain)
-- [Pointed](#pointed)
-  - [of](#of)
-- [Zero](#zero)
-  - [zero](#zero)
-- [combinators](#combinators)
-  - [apFirst](#apfirst)
-  - [apSecond](#apsecond)
   - [chainEitherK](#chaineitherk)
   - [chainFirst](#chainfirst)
   - [chainFirstEitherK](#chainfirsteitherk)
   - [chainFirstIOK](#chainfirstiok)
   - [chainIOK](#chainiok)
+  - [chainNullableK](#chainnullablek)
   - [chainOptionK](#chainoptionk)
-  - [flap](#flap)
-  - [flatten](#flatten)
+- [lifting](#lifting)
   - [fromEitherK](#fromeitherk)
   - [fromIOK](#fromiok)
+  - [fromNullableK](#fromnullablek)
   - [fromOptionK](#fromoptionk)
-- [constructors](#constructors)
   - [fromPredicate](#frompredicate)
-  - [guard](#guard)
-  - [none](#none)
-  - [some](#some)
-- [destructors](#destructors)
+- [mapping](#mapping)
+  - [as](#as)
+  - [asUnit](#asunit)
+  - [flap](#flap)
+  - [map](#map)
+- [model](#model)
+  - [IOOption (interface)](#iooption-interface)
+- [pattern matching](#pattern-matching)
   - [fold](#fold)
-  - [getOrElse](#getorelse)
-  - [getOrElseW](#getorelsew)
   - [match](#match)
   - [matchE](#matche)
   - [matchEW](#matchew)
   - [matchW](#matchw)
-  - [toNullable](#tonullable)
-  - [toUndefined](#toundefined)
-- [instances](#instances)
-  - [Alt](#alt-1)
-  - [Alternative](#alternative)
-  - [Applicative](#applicative)
-  - [Apply](#apply-1)
-  - [Chain](#chain)
-  - [Compactable](#compactable-1)
-  - [Filterable](#filterable-1)
-  - [FromEither](#fromeither)
-  - [FromIO](#fromio)
-  - [Functor](#functor-1)
-  - [Monad](#monad-1)
-  - [MonadIO](#monadio)
-  - [Pointed](#pointed-1)
-  - [URI (type alias)](#uri-type-alias)
-  - [Zero](#zero-1)
-- [interop](#interop)
-  - [chainNullableK](#chainnullablek)
-  - [fromNullable](#fromnullable)
-  - [fromNullableK](#fromnullablek)
-- [model](#model)
-  - [IOOption (interface)](#iooption-interface)
-- [natural transformations](#natural-transformations)
-  - [fromEither](#fromeither)
-  - [fromIO](#fromio)
-  - [fromIOEither](#fromioeither)
-  - [fromOption](#fromoption)
-- [utils](#utils)
-  - [ApT](#apt)
-  - [Do](#do)
-  - [apS](#aps)
-  - [bind](#bind)
-  - [bindTo](#bindto)
+- [sequencing](#sequencing)
+  - [flatMap](#flatmap)
+  - [flatMapEither](#flatmapeither)
+  - [flatMapIO](#flatmapio)
+  - [flatMapNullable](#flatmapnullable)
+  - [flatMapOption](#flatmapoption)
+  - [flatten](#flatten)
+- [traversing](#traversing)
   - [traverseReadonlyArrayWithIndex](#traversereadonlyarraywithindex)
   - [traverseReadonlyNonEmptyArrayWithIndex](#traversereadonlynonemptyarraywithindex)
+- [type lambdas](#type-lambdas)
+  - [URI](#uri)
+  - [URI (type alias)](#uri-type-alias)
+- [utils](#utils)
+  - [ApT](#apt)
+  - [ap](#ap)
+  - [apFirst](#apfirst)
+  - [apSecond](#apsecond)
+  - [zero](#zero)
 
 ---
 
-# Alt
+# combinators
+
+## tap
+
+Composes computations in sequence, using the return value of one computation to determine the next computation and
+keeping only the result of the first.
+
+**Signature**
+
+```ts
+export declare const tap: {
+  <A, _>(self: IOOption<A>, f: (a: A) => IOOption<_>): IOOption<A>
+  <A, _>(f: (a: A) => IOOption<_>): (self: IOOption<A>) => IOOption<A>
+}
+```
+
+Added in v2.15.0
+
+## tapEither
+
+Composes computations in sequence, using the return value of one computation to determine the next computation and
+keeping only the result of the first.
+
+**Signature**
+
+```ts
+export declare const tapEither: {
+  <A, E, _>(f: (a: A) => Either<E, _>): (self: IOOption<A>) => IOOption<A>
+  <A, E, _>(self: IOOption<A>, f: (a: A) => Either<E, _>): IOOption<A>
+}
+```
+
+**Example**
+
+```ts
+import { pipe } from 'fp-ts/function'
+import * as IOO from 'fp-ts/IOOption'
+import * as O from 'fp-ts/Option'
+import * as E from 'fp-ts/Either'
+
+const compute = (value: number) =>
+  pipe(
+    IOO.of(value),
+    IOO.tapEither((value) => (value > 0 ? E.right('ok') : E.left('error')))
+  )
+
+assert.deepStrictEqual(compute(1)(), O.of(1))
+assert.deepStrictEqual(compute(-1)(), O.none)
+```
+
+Added in v2.16.0
+
+## tapIO
+
+Composes computations in sequence, using the return value of one computation to determine the next computation and
+keeping only the result of the first.
+
+**Signature**
+
+```ts
+export declare const tapIO: {
+  <A, _>(f: (a: A) => I.IO<_>): (self: IOOption<A>) => IOOption<A>
+  <A, _>(self: IOOption<A>, f: (a: A) => I.IO<_>): IOOption<A>
+}
+```
+
+**Example**
+
+```ts
+import { pipe } from 'fp-ts/function'
+import * as IOO from 'fp-ts/IOOption'
+import * as O from 'fp-ts/Option'
+import * as Console from 'fp-ts/Console'
+
+// Will produce `Hello, fp-ts` to the stdout
+const effectA = pipe(
+  IOO.of('fp-ts'),
+  IOO.tapIO((value) => Console.log(`Hello, ${value}`))
+)
+
+// No output to the stdout
+const effectB = pipe(
+  IOO.none as IOO.IOOption<string>,
+  IOO.tapIO((value) => Console.log(`Hello, ${value}`))
+)
+
+async function test() {
+  assert.deepStrictEqual(effectA(), O.of('fp-ts'))
+  assert.deepStrictEqual(effectB(), O.none)
+}
+
+test()
+```
+
+Added in v2.16.0
+
+# constructors
+
+## none
+
+**Signature**
+
+```ts
+export declare const none: IOOption<never>
+```
+
+Added in v2.12.0
+
+## of
+
+**Signature**
+
+```ts
+export declare const of: <A>(a: A) => IOOption<A>
+```
+
+Added in v2.12.0
+
+## some
+
+**Signature**
+
+```ts
+export declare const some: <A>(a: A) => IOOption<A>
+```
+
+Added in v2.12.0
+
+# conversions
+
+## fromEither
+
+**Signature**
+
+```ts
+export declare const fromEither: <A>(fa: Either<unknown, A>) => IOOption<A>
+```
+
+Added in v2.12.0
+
+## fromIO
+
+**Signature**
+
+```ts
+export declare const fromIO: <A>(fa: I.IO<A>) => IOOption<A>
+```
+
+Added in v2.12.0
+
+## fromIOEither
+
+**Signature**
+
+```ts
+export declare const fromIOEither: <A>(fa: IOEither<unknown, A>) => IOOption<A>
+```
+
+Added in v2.12.0
+
+## fromNullable
+
+**Signature**
+
+```ts
+export declare const fromNullable: <A>(a: A) => IOOption<NonNullable<A>>
+```
+
+Added in v2.12.0
+
+## fromOption
+
+**Signature**
+
+```ts
+export declare const fromOption: <A>(fa: O.Option<A>) => IOOption<A>
+```
+
+Added in v2.12.0
+
+## toNullable
+
+**Signature**
+
+```ts
+export declare const toNullable: <A>(ma: IOOption<A>) => I.IO<A | null>
+```
+
+Added in v2.12.0
+
+## toUndefined
+
+**Signature**
+
+```ts
+export declare const toUndefined: <A>(ma: IOOption<A>) => I.IO<A | undefined>
+```
+
+Added in v2.12.0
+
+# do notation
+
+## Do
+
+**Signature**
+
+```ts
+export declare const Do: IOOption<{}>
+```
+
+Added in v2.12.0
+
+## apS
+
+**Signature**
+
+```ts
+export declare const apS: <N, A, B>(
+  name: Exclude<N, keyof A>,
+  fb: IOOption<B>
+) => (fa: IOOption<A>) => IOOption<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
+```
+
+Added in v2.12.0
+
+## bind
+
+**Signature**
+
+```ts
+export declare const bind: <N, A, B>(
+  name: Exclude<N, keyof A>,
+  f: (a: A) => IOOption<B>
+) => (ma: IOOption<A>) => IOOption<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
+```
+
+Added in v2.12.0
+
+## bindTo
+
+**Signature**
+
+```ts
+export declare const bindTo: <N>(name: N) => <A>(fa: IOOption<A>) => IOOption<{ readonly [K in N]: A }>
+```
+
+Added in v2.12.0
+
+## guard
+
+**Signature**
+
+```ts
+export declare const guard: (b: boolean) => IOOption<void>
+```
+
+Added in v2.12.0
+
+## let
+
+**Signature**
+
+```ts
+export declare const let: <N, A, B>(
+  name: Exclude<N, keyof A>,
+  f: (a: A) => B
+) => (fa: IOOption<A>) => IOOption<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
+```
+
+Added in v2.13.0
+
+# error handling
 
 ## alt
 
 **Signature**
 
 ```ts
-export declare const alt: <A>(second: Lazy<IOOption<A>>) => (first: IOOption<A>) => IOOption<A>
+export declare const alt: <A>(second: LazyArg<IOOption<A>>) => (first: IOOption<A>) => IOOption<A>
 ```
 
 Added in v2.12.0
@@ -116,27 +404,41 @@ Added in v2.12.0
 
 Less strict version of [`alt`](#alt).
 
-**Signature**
-
-```ts
-export declare const altW: <B>(second: Lazy<IOOption<B>>) => <A>(first: IOOption<A>) => IOOption<B | A>
-```
-
-Added in v2.12.0
-
-# Apply
-
-## ap
+The `W` suffix (short for **W**idening) means that the return types will be merged.
 
 **Signature**
 
 ```ts
-export declare const ap: <A>(fa: IOOption<A>) => <B>(fab: IOOption<(a: A) => B>) => IOOption<B>
+export declare const altW: <B>(second: LazyArg<IOOption<B>>) => <A>(first: IOOption<A>) => IOOption<B | A>
 ```
 
 Added in v2.12.0
 
-# Compactable
+## getOrElse
+
+**Signature**
+
+```ts
+export declare const getOrElse: <A>(onNone: LazyArg<I.IO<A>>) => (fa: IOOption<A>) => I.IO<A>
+```
+
+Added in v2.12.0
+
+## getOrElseW
+
+Less strict version of [`getOrElse`](#getorelse).
+
+The `W` suffix (short for **W**idening) means that the handler return type will be merged.
+
+**Signature**
+
+```ts
+export declare const getOrElseW: <B>(onNone: LazyArg<I.IO<B>>) => <A>(ma: IOOption<A>) => I.IO<B | A>
+```
+
+Added in v2.12.0
+
+# filtering
 
 ## compact
 
@@ -147,18 +449,6 @@ export declare const compact: <A>(fa: IOOption<O.Option<A>>) => IOOption<A>
 ```
 
 Added in v2.12.0
-
-## separate
-
-**Signature**
-
-```ts
-export declare const separate: <A, B>(fa: IOOption<Either<A, B>>) => Separated<IOOption<A>, IOOption<B>>
-```
-
-Added in v2.12.0
-
-# Filterable
 
 ## filter
 
@@ -210,353 +500,12 @@ export declare const partitionMap: <A, B, C>(
 
 Added in v2.12.0
 
-# Functor
-
-## map
-
-`map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
-use the type constructor `F` to represent some computational context.
+## separate
 
 **Signature**
 
 ```ts
-export declare const map: <A, B>(f: (a: A) => B) => (fa: IOOption<A>) => IOOption<B>
-```
-
-Added in v2.12.0
-
-# Monad
-
-## chain
-
-**Signature**
-
-```ts
-export declare const chain: <A, B>(f: (a: A) => IOOption<B>) => (ma: IOOption<A>) => IOOption<B>
-```
-
-Added in v2.12.0
-
-# Pointed
-
-## of
-
-**Signature**
-
-```ts
-export declare const of: <A>(a: A) => IOOption<A>
-```
-
-Added in v2.12.0
-
-# Zero
-
-## zero
-
-**Signature**
-
-```ts
-export declare const zero: <A>() => IOOption<A>
-```
-
-Added in v2.12.0
-
-# combinators
-
-## apFirst
-
-Combine two effectful actions, keeping only the result of the first.
-
-Derivable from `Apply`.
-
-**Signature**
-
-```ts
-export declare const apFirst: <B>(second: IOOption<B>) => <A>(first: IOOption<A>) => IOOption<A>
-```
-
-Added in v2.12.0
-
-## apSecond
-
-Combine two effectful actions, keeping only the result of the second.
-
-Derivable from `Apply`.
-
-**Signature**
-
-```ts
-export declare const apSecond: <B>(second: IOOption<B>) => <A>(first: IOOption<A>) => IOOption<B>
-```
-
-Added in v2.12.0
-
-## chainEitherK
-
-**Signature**
-
-```ts
-export declare const chainEitherK: <E, A, B>(f: (a: A) => Either<E, B>) => (ma: IOOption<A>) => IOOption<B>
-```
-
-Added in v2.12.0
-
-## chainFirst
-
-Composes computations in sequence, using the return value of one computation to determine the next computation and
-keeping only the result of the first.
-
-Derivable from `Chain`.
-
-**Signature**
-
-```ts
-export declare const chainFirst: <A, B>(f: (a: A) => IOOption<B>) => (first: IOOption<A>) => IOOption<A>
-```
-
-Added in v2.12.0
-
-## chainFirstEitherK
-
-**Signature**
-
-```ts
-export declare const chainFirstEitherK: <E, A, B>(f: (a: A) => Either<E, B>) => (ma: IOOption<A>) => IOOption<A>
-```
-
-Added in v2.12.0
-
-## chainFirstIOK
-
-**Signature**
-
-```ts
-export declare const chainFirstIOK: <A, B>(f: (a: A) => I.IO<B>) => (first: IOOption<A>) => IOOption<A>
-```
-
-Added in v2.12.0
-
-## chainIOK
-
-**Signature**
-
-```ts
-export declare const chainIOK: <A, B>(f: (a: A) => I.IO<B>) => (first: IOOption<A>) => IOOption<B>
-```
-
-Added in v2.12.0
-
-## chainOptionK
-
-**Signature**
-
-```ts
-export declare const chainOptionK: <A, B>(f: (a: A) => O.Option<B>) => (ma: IOOption<A>) => IOOption<B>
-```
-
-Added in v2.12.0
-
-## flap
-
-Derivable from `Functor`.
-
-**Signature**
-
-```ts
-export declare const flap: <A>(a: A) => <B>(fab: IOOption<(a: A) => B>) => IOOption<B>
-```
-
-Added in v2.12.0
-
-## flatten
-
-Derivable from `Chain`.
-
-**Signature**
-
-```ts
-export declare const flatten: <A>(mma: IOOption<IOOption<A>>) => IOOption<A>
-```
-
-Added in v2.12.0
-
-## fromEitherK
-
-**Signature**
-
-```ts
-export declare const fromEitherK: <E, A, B>(f: (...a: A) => Either<E, B>) => (...a: A) => IOOption<B>
-```
-
-Added in v2.12.0
-
-## fromIOK
-
-**Signature**
-
-```ts
-export declare const fromIOK: <A, B>(f: (...a: A) => I.IO<B>) => (...a: A) => IOOption<B>
-```
-
-Added in v2.12.0
-
-## fromOptionK
-
-**Signature**
-
-```ts
-export declare const fromOptionK: <A extends readonly unknown[], B>(
-  f: (...a: A) => O.Option<B>
-) => (...a: A) => IOOption<B>
-```
-
-Added in v2.12.0
-
-# constructors
-
-## fromPredicate
-
-**Signature**
-
-```ts
-export declare const fromPredicate: {
-  <A, B extends A>(refinement: Refinement<A, B>): (a: A) => IOOption<B>
-  <A>(predicate: Predicate<A>): <B extends A>(b: B) => IOOption<B>
-  <A>(predicate: Predicate<A>): (a: A) => IOOption<A>
-}
-```
-
-Added in v2.12.0
-
-## guard
-
-**Signature**
-
-```ts
-export declare const guard: (b: boolean) => IOOption<void>
-```
-
-Added in v2.12.0
-
-## none
-
-**Signature**
-
-```ts
-export declare const none: IOOption<never>
-```
-
-Added in v2.12.0
-
-## some
-
-**Signature**
-
-```ts
-export declare const some: <A>(a: A) => IOOption<A>
-```
-
-Added in v2.12.0
-
-# destructors
-
-## fold
-
-Alias of [`matchE`](#matche).
-
-**Signature**
-
-```ts
-export declare const fold: <B, A>(onNone: () => I.IO<B>, onSome: (a: A) => I.IO<B>) => (ma: IOOption<A>) => I.IO<B>
-```
-
-Added in v2.12.0
-
-## getOrElse
-
-**Signature**
-
-```ts
-export declare const getOrElse: <A>(onNone: Lazy<I.IO<A>>) => (fa: IOOption<A>) => I.IO<A>
-```
-
-Added in v2.12.0
-
-## getOrElseW
-
-Less strict version of [`getOrElse`](#getorelse).
-
-**Signature**
-
-```ts
-export declare const getOrElseW: <B>(onNone: Lazy<I.IO<B>>) => <A>(ma: IOOption<A>) => I.IO<B | A>
-```
-
-Added in v2.12.0
-
-## match
-
-**Signature**
-
-```ts
-export declare const match: <B, A>(onNone: () => B, onSome: (a: A) => B) => (ma: IOOption<A>) => I.IO<B>
-```
-
-Added in v2.12.0
-
-## matchE
-
-**Signature**
-
-```ts
-export declare const matchE: <B, A>(onNone: () => I.IO<B>, onSome: (a: A) => I.IO<B>) => (ma: IOOption<A>) => I.IO<B>
-```
-
-Added in v2.12.0
-
-## matchEW
-
-Less strict version of [`matchE`](#matche).
-
-**Signature**
-
-```ts
-export declare const matchEW: <B, C, A>(
-  onNone: () => I.IO<B>,
-  onSome: (a: A) => I.IO<C>
-) => (ma: IOOption<A>) => I.IO<B | C>
-```
-
-Added in v2.12.0
-
-## matchW
-
-Less strict version of [`match`](#match).
-
-**Signature**
-
-```ts
-export declare const matchW: <B, A, C>(onNone: () => B, onSome: (a: A) => C) => (ma: IOOption<A>) => I.IO<B | C>
-```
-
-Added in v2.12.0
-
-## toNullable
-
-**Signature**
-
-```ts
-export declare const toNullable: <A>(ma: IOOption<A>) => I.IO<A | null>
-```
-
-Added in v2.12.0
-
-## toUndefined
-
-**Signature**
-
-```ts
-export declare const toUndefined: <A>(ma: IOOption<A>) => I.IO<A | undefined>
+export declare const separate: <A, B>(fa: IOOption<Either<A, B>>) => Separated<IOOption<A>, IOOption<B>>
 ```
 
 Added in v2.12.0
@@ -608,7 +557,7 @@ Added in v2.12.0
 **Signature**
 
 ```ts
-export declare const Chain: Chain1<'IOOption'>
+export declare const Chain: chainable.Chain1<'IOOption'>
 ```
 
 Added in v2.12.0
@@ -693,16 +642,6 @@ export declare const Pointed: Pointed1<'IOOption'>
 
 Added in v2.12.0
 
-## URI (type alias)
-
-**Signature**
-
-```ts
-export type URI = typeof URI
-```
-
-Added in v2.12.0
-
 ## Zero
 
 **Signature**
@@ -713,9 +652,83 @@ export declare const Zero: Zero1<'IOOption'>
 
 Added in v2.12.0
 
-# interop
+# legacy
+
+## chain
+
+Alias of `flatMap`.
+
+**Signature**
+
+```ts
+export declare const chain: <A, B>(f: (a: A) => IOOption<B>) => (ma: IOOption<A>) => IOOption<B>
+```
+
+Added in v2.12.0
+
+## chainEitherK
+
+Alias of `flatMapEither`.
+
+**Signature**
+
+```ts
+export declare const chainEitherK: <E, A, B>(f: (a: A) => Either<E, B>) => (ma: IOOption<A>) => IOOption<B>
+```
+
+Added in v2.12.0
+
+## chainFirst
+
+Alias of `tap`.
+
+**Signature**
+
+```ts
+export declare const chainFirst: <A, B>(f: (a: A) => IOOption<B>) => (first: IOOption<A>) => IOOption<A>
+```
+
+Added in v2.12.0
+
+## chainFirstEitherK
+
+Alias of `tapEither`.
+
+**Signature**
+
+```ts
+export declare const chainFirstEitherK: <E, A, B>(f: (a: A) => Either<E, B>) => (ma: IOOption<A>) => IOOption<A>
+```
+
+Added in v2.12.0
+
+## chainFirstIOK
+
+Alias of `tapIO`.
+
+**Signature**
+
+```ts
+export declare const chainFirstIOK: <A, B>(f: (a: A) => I.IO<B>) => (first: IOOption<A>) => IOOption<A>
+```
+
+Added in v2.12.0
+
+## chainIOK
+
+Alias of `flatMapIO`.
+
+**Signature**
+
+```ts
+export declare const chainIOK: <A, B>(f: (a: A) => I.IO<B>) => (first: IOOption<A>) => IOOption<B>
+```
+
+Added in v2.12.0
 
 ## chainNullableK
+
+Alias of `flatMapNullable`.
 
 **Signature**
 
@@ -727,12 +740,38 @@ export declare const chainNullableK: <A, B>(
 
 Added in v2.12.0
 
-## fromNullable
+## chainOptionK
+
+Alias of `flatMapOption`.
 
 **Signature**
 
 ```ts
-export declare const fromNullable: <A>(a: A) => IOOption<NonNullable<A>>
+export declare const chainOptionK: <A, B>(f: (a: A) => O.Option<B>) => (ma: IOOption<A>) => IOOption<B>
+```
+
+Added in v2.12.0
+
+# lifting
+
+## fromEitherK
+
+**Signature**
+
+```ts
+export declare const fromEitherK: <E, A extends readonly unknown[], B>(
+  f: (...a: A) => Either<E, B>
+) => (...a: A) => IOOption<B>
+```
+
+Added in v2.12.0
+
+## fromIOK
+
+**Signature**
+
+```ts
+export declare const fromIOK: <A extends readonly unknown[], B>(f: (...a: A) => I.IO<B>) => (...a: A) => IOOption<B>
 ```
 
 Added in v2.12.0
@@ -749,6 +788,84 @@ export declare const fromNullableK: <A extends readonly unknown[], B>(
 
 Added in v2.12.0
 
+## fromOptionK
+
+**Signature**
+
+```ts
+export declare const fromOptionK: <A extends readonly unknown[], B>(
+  f: (...a: A) => O.Option<B>
+) => (...a: A) => IOOption<B>
+```
+
+Added in v2.12.0
+
+## fromPredicate
+
+**Signature**
+
+```ts
+export declare const fromPredicate: {
+  <A, B extends A>(refinement: Refinement<A, B>): (a: A) => IOOption<B>
+  <A>(predicate: Predicate<A>): <B extends A>(b: B) => IOOption<B>
+  <A>(predicate: Predicate<A>): (a: A) => IOOption<A>
+}
+```
+
+Added in v2.12.0
+
+# mapping
+
+## as
+
+Maps the `Some` value of this `IOOption` to the specified constant value.
+
+**Signature**
+
+```ts
+export declare const as: {
+  <A>(a: A): <_>(self: IOOption<_>) => IOOption<A>
+  <_, A>(self: IOOption<_>, a: A): IOOption<A>
+}
+```
+
+Added in v2.16.0
+
+## asUnit
+
+Maps the `Some` value of this `IOOption` to the void constant value.
+
+**Signature**
+
+```ts
+export declare const asUnit: <_>(self: IOOption<_>) => IOOption<void>
+```
+
+Added in v2.16.0
+
+## flap
+
+**Signature**
+
+```ts
+export declare const flap: <A>(a: A) => <B>(fab: IOOption<(a: A) => B>) => IOOption<B>
+```
+
+Added in v2.12.0
+
+## map
+
+`map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
+use the type constructor `F` to represent some computational context.
+
+**Signature**
+
+```ts
+export declare const map: <A, B>(f: (a: A) => B) => (fa: IOOption<A>) => IOOption<B>
+```
+
+Added in v2.12.0
+
 # model
 
 ## IOOption (interface)
@@ -761,44 +878,198 @@ export interface IOOption<A> extends IO<Option<A>> {}
 
 Added in v2.12.0
 
-# natural transformations
+# pattern matching
 
-## fromEither
+## fold
+
+Alias of [`matchE`](#matche).
 
 **Signature**
 
 ```ts
-export declare const fromEither: NaturalTransformation21<'Either', 'IOOption'>
+export declare const fold: <B, A>(onNone: () => I.IO<B>, onSome: (a: A) => I.IO<B>) => (ma: IOOption<A>) => I.IO<B>
 ```
 
 Added in v2.12.0
 
-## fromIO
+## match
 
 **Signature**
 
 ```ts
-export declare const fromIO: NaturalTransformation11<'IO', 'IOOption'>
+export declare const match: <B, A>(onNone: () => B, onSome: (a: A) => B) => (ma: IOOption<A>) => I.IO<B>
 ```
 
 Added in v2.12.0
 
-## fromIOEither
+## matchE
+
+The `E` suffix (short for **E**ffect) means that the handlers return an effect (`IO`).
 
 **Signature**
 
 ```ts
-export declare const fromIOEither: NaturalTransformation21<'IOEither', 'IOOption'>
+export declare const matchE: <B, A>(onNone: () => I.IO<B>, onSome: (a: A) => I.IO<B>) => (ma: IOOption<A>) => I.IO<B>
 ```
 
 Added in v2.12.0
 
-## fromOption
+## matchEW
+
+Less strict version of [`matchE`](#matche).
+
+The `W` suffix (short for **W**idening) means that the handler return types will be merged.
 
 **Signature**
 
 ```ts
-export declare const fromOption: NaturalTransformation11<'Option', 'IOOption'>
+export declare const matchEW: <B, C, A>(
+  onNone: () => I.IO<B>,
+  onSome: (a: A) => I.IO<C>
+) => (ma: IOOption<A>) => I.IO<B | C>
+```
+
+Added in v2.12.0
+
+## matchW
+
+Less strict version of [`match`](#match).
+
+The `W` suffix (short for **W**idening) means that the handler return types will be merged.
+
+**Signature**
+
+```ts
+export declare const matchW: <B, A, C>(onNone: () => B, onSome: (a: A) => C) => (ma: IOOption<A>) => I.IO<B | C>
+```
+
+Added in v2.12.0
+
+# sequencing
+
+## flatMap
+
+**Signature**
+
+```ts
+export declare const flatMap: {
+  <A, B>(f: (a: A) => IOOption<B>): (ma: IOOption<A>) => IOOption<B>
+  <A, B>(ma: IOOption<A>, f: (a: A) => IOOption<B>): IOOption<B>
+}
+```
+
+Added in v2.14.0
+
+## flatMapEither
+
+**Signature**
+
+```ts
+export declare const flatMapEither: {
+  <A, B, _>(f: (a: A) => Either<_, B>): (self: IOOption<A>) => IOOption<B>
+  <A, B, _>(self: IOOption<A>, f: (a: A) => Either<_, B>): IOOption<B>
+}
+```
+
+Added in v2.16.0
+
+## flatMapIO
+
+**Signature**
+
+```ts
+export declare const flatMapIO: {
+  <A, B>(f: (a: A) => I.IO<B>): (self: IOOption<A>) => IOOption<B>
+  <A, B>(self: IOOption<A>, f: (a: A) => I.IO<B>): IOOption<B>
+}
+```
+
+Added in v2.16.0
+
+## flatMapNullable
+
+**Signature**
+
+```ts
+export declare const flatMapNullable: {
+  <A, B>(f: (a: A) => B | null | undefined): (self: IOOption<A>) => IOOption<B>
+  <A, B>(self: IOOption<A>, f: (a: A) => B | null | undefined): IOOption<B>
+}
+```
+
+Added in v2.16.0
+
+## flatMapOption
+
+**Signature**
+
+```ts
+export declare const flatMapOption: {
+  <A, B>(f: (a: A) => O.Option<B>): (self: IOOption<A>) => IOOption<B>
+  <A, B>(self: IOOption<A>, f: (a: A) => O.Option<B>): IOOption<B>
+}
+```
+
+Added in v2.16.0
+
+## flatten
+
+**Signature**
+
+```ts
+export declare const flatten: <A>(mma: IOOption<IOOption<A>>) => IOOption<A>
+```
+
+Added in v2.12.0
+
+# traversing
+
+## traverseReadonlyArrayWithIndex
+
+Equivalent to `ReadonlyArray#traverseWithIndex(Applicative)`.
+
+**Signature**
+
+```ts
+export declare const traverseReadonlyArrayWithIndex: <A, B>(
+  f: (index: number, a: A) => IOOption<B>
+) => (as: readonly A[]) => IOOption<readonly B[]>
+```
+
+Added in v2.12.0
+
+## traverseReadonlyNonEmptyArrayWithIndex
+
+Equivalent to `ReadonlyNonEmptyArray#traverseWithIndex(Applicative)`.
+
+**Signature**
+
+```ts
+export declare const traverseReadonlyNonEmptyArrayWithIndex: <A, B>(
+  f: (index: number, a: A) => IOOption<B>
+) => (as: ReadonlyNonEmptyArray<A>) => IOOption<ReadonlyNonEmptyArray<B>>
+```
+
+Added in v2.12.0
+
+# type lambdas
+
+## URI
+
+**Signature**
+
+```ts
+export declare const URI: 'IOOption'
+```
+
+Added in v2.12.0
+
+## URI (type alias)
+
+**Signature**
+
+```ts
+export type URI = typeof URI
 ```
 
 Added in v2.12.0
@@ -815,72 +1086,46 @@ export declare const ApT: IOOption<readonly []>
 
 Added in v2.12.0
 
-## Do
+## ap
 
 **Signature**
 
 ```ts
-export declare const Do: IOOption<{}>
+export declare const ap: <A>(fa: IOOption<A>) => <B>(fab: IOOption<(a: A) => B>) => IOOption<B>
 ```
 
 Added in v2.12.0
 
-## apS
+## apFirst
+
+Combine two effectful actions, keeping only the result of the first.
 
 **Signature**
 
 ```ts
-export declare const apS: <N, A, B>(
-  name: Exclude<N, keyof A>,
-  fb: IOOption<B>
-) => (fa: IOOption<A>) => IOOption<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
+export declare const apFirst: <B>(second: IOOption<B>) => <A>(first: IOOption<A>) => IOOption<A>
 ```
 
 Added in v2.12.0
 
-## bind
+## apSecond
+
+Combine two effectful actions, keeping only the result of the second.
 
 **Signature**
 
 ```ts
-export declare const bind: <N, A, B>(
-  name: Exclude<N, keyof A>,
-  f: (a: A) => IOOption<B>
-) => (ma: IOOption<A>) => IOOption<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
+export declare const apSecond: <B>(second: IOOption<B>) => <A>(first: IOOption<A>) => IOOption<B>
 ```
 
 Added in v2.12.0
 
-## bindTo
+## zero
 
 **Signature**
 
 ```ts
-export declare const bindTo: <N>(name: N) => <A>(fa: IOOption<A>) => IOOption<{ readonly [K in N]: A }>
-```
-
-Added in v2.12.0
-
-## traverseReadonlyArrayWithIndex
-
-**Signature**
-
-```ts
-export declare const traverseReadonlyArrayWithIndex: <A, B>(
-  f: (index: number, a: A) => IOOption<B>
-) => (as: readonly A[]) => IOOption<readonly B[]>
-```
-
-Added in v2.12.0
-
-## traverseReadonlyNonEmptyArrayWithIndex
-
-**Signature**
-
-```ts
-export declare const traverseReadonlyNonEmptyArrayWithIndex: <A, B>(
-  f: (index: number, a: A) => IOOption<B>
-) => (as: ReadonlyNonEmptyArray<A>) => IOOption<ReadonlyNonEmptyArray<B>>
+export declare const zero: <A>() => IOOption<A>
 ```
 
 Added in v2.12.0

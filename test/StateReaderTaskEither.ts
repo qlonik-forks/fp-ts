@@ -1,4 +1,5 @@
 import * as assert from 'assert'
+
 import * as A from '../src/Array'
 import * as E from '../src/Either'
 import { pipe, SK, tuple } from '../src/function'
@@ -10,7 +11,7 @@ import * as RE from '../src/ReaderEither'
 import * as RTE from '../src/ReaderTaskEither'
 import * as RA from '../src/ReadonlyArray'
 import { ReadonlyNonEmptyArray } from '../src/ReadonlyNonEmptyArray'
-import { State } from '../src/State'
+import { of as stateOf, State } from '../src/State'
 import * as _ from '../src/StateReaderTaskEither'
 import * as S from '../src/string'
 import * as T from '../src/Task'
@@ -80,10 +81,22 @@ describe('StateReaderTaskEither', () => {
       U.deepStrictEqual(e, E.right(6))
     })
 
+    it('flatMap', async () => {
+      const f = (s: string) => (s.length > 2 ? _.right(s.length) : _.right(0))
+      U.deepStrictEqual(await pipe(_.right('aaa'), _.flatMap(f), _.evaluate(state))({})(), E.right(3))
+      U.deepStrictEqual(await pipe(_.flatMap(_.right('aaa'), f), _.evaluate(state))({})(), E.right(3))
+    })
+
     it('chain', async () => {
       const f = (s: string) => (s.length > 2 ? _.right(s.length) : _.right(0))
       const e = await pipe(_.right('aaa'), _.chain(f), _.evaluate(state))({})()
       U.deepStrictEqual(e, E.right(3))
+    })
+
+    it('tap', async () => {
+      const f = (s: string) => (s.length > 2 ? _.right(s.length) : _.right(0))
+      U.deepStrictEqual(await pipe(_.right('aaa'), _.tap(f), _.evaluate(state))({})(), E.right('aaa'))
+      U.deepStrictEqual(await pipe(_.tap(_.right('aaa'), f), _.evaluate(state))({})(), E.right('aaa'))
     })
 
     it('chainFirst', async () => {
@@ -183,7 +196,6 @@ describe('StateReaderTaskEither', () => {
   })
 
   it('applicativeReaderTaskEitherSeq', async () => {
-    // tslint:disable-next-line: readonly-array
     const log: Array<string> = []
     const append = (message: string): _.StateReaderTaskEither<{}, {}, void, number> =>
       _.rightTask(() => Promise.resolve(log.push(message)))
@@ -317,6 +329,12 @@ describe('StateReaderTaskEither', () => {
     assert.deepStrictEqual(x, E.right([1, undefined]))
   })
 
+  it('flatMapTaskEither', async () => {
+    const f = (s: string) => TE.right(s.length)
+    const x = await pipe(_.right('a'), _.flatMapTaskEither(f))(undefined)(undefined)()
+    assert.deepStrictEqual(x, E.right([1, undefined]))
+  })
+
   it('chainReaderTaskEitherK', async () => {
     const f = (s: string) => RTE.right(s.length)
     const x = await pipe(_.right('a'), _.chainReaderTaskEitherK(f))(undefined)(undefined)()
@@ -344,9 +362,10 @@ describe('StateReaderTaskEither', () => {
       await pipe(
         _.right<void, void, string, number>(1),
         _.bindTo('a'),
-        _.bind('b', () => _.right('b'))
+        _.bind('b', () => _.right('b')),
+        _.let('c', ({ a, b }) => [a, b])
       )(undefined)(undefined)(),
-      E.right([{ a: 1, b: 'b' }, undefined])
+      E.right([{ a: 1, b: 'b', c: [1, 'b'] }, undefined])
     )
   })
 
@@ -408,7 +427,6 @@ describe('StateReaderTaskEither', () => {
 
     // old
     it('sequenceArray', async () => {
-      // tslint:disable-next-line: readonly-array
       const log: Array<number | string> = []
       const right = (n: number): _.StateReaderTaskEither<undefined, undefined, string, number> =>
         _.rightIO(() => {
@@ -421,13 +439,10 @@ describe('StateReaderTaskEither', () => {
           return s
         })
       assert.deepStrictEqual(
-        // tslint:disable-next-line: deprecation
         await pipe([right(1), right(2)], _.sequenceArray)(undefined)(undefined)(),
         E.right([[1, 2], undefined])
       )
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(await pipe([right(3), left('a')], _.sequenceArray)(undefined)(undefined)(), E.left('a'))
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(await pipe([left('b'), right(4)], _.sequenceArray)(undefined)(undefined)(), E.left('b'))
       U.deepStrictEqual(log, [1, 2, 3, 'a', 'b'])
     })
@@ -438,7 +453,6 @@ describe('StateReaderTaskEither', () => {
       U.deepStrictEqual(
         await pipe(
           [1, 2, 3],
-          // tslint:disable-next-line: deprecation
           _.traverseArray(append),
           _.map(() => undefined)
         )([])({})(),
@@ -454,12 +468,20 @@ describe('StateReaderTaskEither', () => {
   })
 
   it('fromStateK', async () => {
-    const ma = _.fromStateK((n: number): State<number, number> => (s) => [n * 2, s + 1])
+    const ma = _.fromStateK(
+      (n: number): State<number, number> =>
+        (s) =>
+          [n * 2, s + 1]
+    )
     U.deepStrictEqual(await ma(3)(2)({})(), E.right([6, 3]))
   })
 
   it('chainStateK', async () => {
-    const f = _.chainStateK((n: number): State<number, number> => (s) => [n * 2, s + 1])
+    const f = _.chainStateK(
+      (n: number): State<number, number> =>
+        (s) =>
+          [n * 2, s + 1]
+    )
     const right: _.StateReaderTaskEither<number, unknown, never, number> = _.right(3)
     U.deepStrictEqual(await pipe(right, f)(2)({})(), E.right([6, 3]))
     const left: _.StateReaderTaskEither<number, unknown, string, number> = _.left('a')
@@ -485,10 +507,145 @@ describe('StateReaderTaskEither', () => {
     U.deepStrictEqual(await _.asksStateReaderTaskEither(f)({})(e)(), E.right(tuple(1, {})))
   })
 
+  it('tapEither', async () => {
+    const f = (s: string) => E.right(s.length)
+    U.deepStrictEqual(await pipe(_.right('a'), _.tapEither(f), _.evaluate(state))({})(), E.right('a'))
+    const g = (s: string) => E.left(s.length)
+    U.deepStrictEqual(await pipe(_.right('a'), _.tapEither(g), _.evaluate(state))({})(), E.left(1))
+  })
+
   it('chainFirstEitherK', async () => {
     const f = (s: string) => E.right(s.length)
     U.deepStrictEqual(await pipe(_.right('a'), _.chainFirstEitherK(f), _.evaluate(state))({})(), E.right('a'))
     const g = (s: string) => E.left(s.length)
     U.deepStrictEqual(await pipe(_.right('a'), _.chainFirstEitherK(g), _.evaluate(state))({})(), E.left(1))
+  })
+
+  it('tapIO', async () => {
+    const ref: Array<number> = []
+    const add = (value: number) => () => ref.push(value)
+
+    U.deepStrictEqual(await pipe(_.ask<unknown, number>(), _.tapIO(add), _.evaluate(state))(1)(), E.of(1))
+    U.deepStrictEqual(await pipe(_.left('error'), _.tapIO(add), _.evaluate(state))(undefined)(), E.left('error'))
+    U.deepStrictEqual(ref, [1])
+  })
+
+  it('tapTask', async () => {
+    const ref: Array<number> = []
+    const add = (value: number) => T.fromIO(() => ref.push(value))
+
+    U.deepStrictEqual(await pipe(_.ask<unknown, number>(), _.tapTask(add), _.evaluate(state))(1)(), E.of(1))
+    U.deepStrictEqual(await pipe(_.left('error'), _.tapTask(add), _.evaluate(state))(undefined)(), E.left('error'))
+    U.deepStrictEqual(ref, [1])
+  })
+
+  it('as', async () => {
+    U.deepStrictEqual(await pipe(_.right('a'), _.as('b'), _.evaluate(state))(undefined)(), E.right('b'))
+    U.deepStrictEqual(await pipe(_.as(_.left('error'), 'b'), _.evaluate(state))(undefined)(), E.left('error'))
+  })
+
+  it('asUnit', async () => {
+    U.deepStrictEqual(await pipe(_.of('a'), _.asUnit, _.evaluate(state))(undefined)(), E.of(undefined))
+  })
+
+  it('tapReader', async () => {
+    U.deepStrictEqual(
+      await pipe(
+        _.tapReader(_.of(1), () => R.of(2)),
+        _.evaluate(state)
+      )({})(),
+      E.of(1)
+    )
+  })
+
+  it('flatMapIO', async () => {
+    U.deepStrictEqual(
+      await pipe(
+        _.of(1),
+        _.flatMapIO(() => I.of(2)),
+        _.evaluate(state)
+      )(undefined)(),
+      E.of(2)
+    )
+  })
+
+  it('flatMapTask', async () => {
+    const f = (s: string) => T.of(s.length)
+    U.deepStrictEqual(await pipe(_.of('a'), _.flatMapTask(f), _.evaluate(state))(undefined)(), E.of(1))
+  })
+
+  it('flatMapReader', async () => {
+    U.deepStrictEqual(
+      await pipe(
+        _.flatMapReader(_.of(1), () => R.of(2)),
+        _.evaluate(state)
+      )(undefined)(),
+      E.of(2)
+    )
+  })
+
+  it('flatMapIOEither', async () => {
+    U.deepStrictEqual(
+      await pipe(
+        _.flatMapIOEither(_.of(1), () => IE.of(2)),
+        _.evaluate(state)
+      )(undefined)(),
+      E.of(2)
+    )
+  })
+  it('flatMapEither', async () => {
+    U.deepStrictEqual(
+      await pipe(
+        _.flatMapEither(_.of(1), () => E.of(2)),
+        _.evaluate(state)
+      )(undefined)(),
+      E.of(2)
+    )
+  })
+
+  it('flatMapOption', async () => {
+    U.deepStrictEqual(
+      await pipe(
+        _.flatMapOption(
+          _.of(1),
+          () => O.of(2),
+          () => 'error'
+        ),
+        _.evaluate(state)
+      )(undefined)(),
+      E.of(2)
+    )
+
+    U.deepStrictEqual(
+      await pipe(
+        _.flatMapOption(
+          _.of(1),
+          () => O.none,
+          () => 'error'
+        ),
+        _.evaluate(state)
+      )(undefined)(),
+      E.left('error')
+    )
+  })
+
+  it('flatMapReaderTaskEither', async () => {
+    U.deepStrictEqual(
+      await pipe(
+        _.flatMapReaderTaskEither(_.of(1), () => RTE.of(2)),
+        _.evaluate(state)
+      )(undefined)(),
+      E.of(2)
+    )
+  })
+
+  it('flatMapState', async () => {
+    U.deepStrictEqual(
+      await pipe(
+        _.flatMapState(_.of(1), () => stateOf(2)),
+        _.evaluate(state)
+      )(undefined)(),
+      E.of(2)
+    )
   })
 })

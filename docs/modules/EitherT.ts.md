@@ -6,19 +6,24 @@ parent: Modules
 
 ## EitherT overview
 
+The error monad transformer. It can be used to add error handling to other monads.
+
+The `of` function yields a successful computation, while `chain` sequences two subcomputations, failing on the first error.
+
 Added in v2.0.0
 
 ---
 
 <h2 class="text-delta">Table of contents</h2>
 
-- [model](#model)
-  - [~~EitherT1~~ (type alias)](#eithert1-type-alias)
-  - [~~EitherT2~~ (type alias)](#eithert2-type-alias)
-  - [~~EitherT~~ (interface)](#eithert-interface)
+- [error handling](#error-handling)
+  - [altValidation](#altvalidation)
+  - [orElseFirst](#orelsefirst)
+  - [orLeft](#orleft)
+- [pattern matching](#pattern-matching)
+  - [match](#match)
 - [utils](#utils)
   - [alt](#alt)
-  - [altValidation](#altvalidation)
   - [ap](#ap)
   - [bimap](#bimap)
   - [chain](#chain)
@@ -30,53 +35,163 @@ Added in v2.0.0
   - [leftF](#leftf)
   - [map](#map)
   - [mapLeft](#mapleft)
-  - [match](#match)
   - [matchE](#matche)
   - [orElse](#orelse)
-  - [orElseFirst](#orelsefirst)
-  - [orLeft](#orleft)
   - [right](#right)
   - [rightF](#rightf)
   - [swap](#swap)
   - [toUnion](#tounion)
+- [zone of death](#zone-of-death)
   - [~~EitherM1~~ (interface)](#eitherm1-interface)
   - [~~EitherM2~~ (interface)](#eitherm2-interface)
   - [~~EitherM~~ (interface)](#eitherm-interface)
+  - [~~EitherT1~~ (type alias)](#eithert1-type-alias)
+  - [~~EitherT2~~ (type alias)](#eithert2-type-alias)
+  - [~~EitherT~~ (interface)](#eithert-interface)
   - [~~getEitherM~~](#geteitherm)
 
 ---
 
-# model
+# error handling
 
-## ~~EitherT1~~ (type alias)
-
-**Signature**
-
-```ts
-export type EitherT1<M extends URIS, E, A> = Kind<M, Either<E, A>>
-```
-
-Added in v2.0.0
-
-## ~~EitherT2~~ (type alias)
+## altValidation
 
 **Signature**
 
 ```ts
-export type EitherT2<M extends URIS2, R, E, A> = Kind2<M, R, Either<E, A>>
+export declare function altValidation<M extends URIS3, E>(
+  M: Monad3<M>,
+  S: Semigroup<E>
+): <R, ME, A>(
+  second: LazyArg<Kind3<M, R, ME, Either<E, A>>>
+) => (first: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
+export declare function altValidation<M extends URIS3, ME, E>(
+  M: Monad3C<M, ME>,
+  S: Semigroup<E>
+): <R, A>(
+  second: LazyArg<Kind3<M, R, ME, Either<E, A>>>
+) => (first: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
+export declare function altValidation<M extends URIS2, E>(
+  M: Monad2<M>,
+  S: Semigroup<E>
+): <ME, A>(
+  second: LazyArg<Kind2<M, ME, Either<E, A>>>
+) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
+export declare function altValidation<M extends URIS2, ME, E>(
+  M: Monad2C<M, ME>,
+  S: Semigroup<E>
+): <A>(second: LazyArg<Kind2<M, ME, Either<E, A>>>) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
+export declare function altValidation<M extends URIS, E>(
+  M: Monad1<M>,
+  S: Semigroup<E>
+): <A>(second: LazyArg<Kind<M, Either<E, A>>>) => (first: Kind<M, Either<E, A>>) => Kind<M, Either<E, A>>
+export declare function altValidation<M, E>(
+  M: Monad<M>,
+  S: Semigroup<E>
+): <A>(second: LazyArg<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>>
 ```
 
-Added in v2.0.0
+Added in v2.10.0
 
-## ~~EitherT~~ (interface)
+## orElseFirst
 
 **Signature**
 
 ```ts
-export interface EitherT<M, E, A> extends HKT<M, Either<E, A>> {}
+export declare function orElseFirst<M extends URIS3>(
+  M: Monad3<M>
+): <E, R, ME, B>(
+  onLeft: (e: E) => Kind3<M, R, ME, Either<E, B>>
+) => <A>(ma: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
+export declare function orElseFirst<M extends URIS3, ME>(
+  M: Monad3C<M, ME>
+): <E, R, B>(
+  onLeft: (e: E) => Kind3<M, R, ME, Either<E, B>>
+) => <A>(ma: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
+export declare function orElseFirst<M extends URIS2>(
+  M: Monad2<M>
+): <E, ME, B>(
+  onLeft: (e: E) => Kind2<M, ME, Either<E, B>>
+) => <A>(ma: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
+export declare function orElseFirst<M extends URIS2, ME>(
+  M: Monad2C<M, ME>
+): <E, B>(
+  onLeft: (e: E) => Kind2<M, ME, Either<E, B>>
+) => <A>(ma: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
+export declare function orElseFirst<M extends URIS>(
+  M: Monad1<M>
+): <E, B>(onLeft: (e: E) => Kind<M, Either<E, B>>) => <A>(ma: Kind<M, Either<E, A>>) => Kind<M, Either<E, A>>
+export declare function orElseFirst<M>(
+  M: Monad<M>
+): <E, B>(onLeft: (e: E) => HKT<M, Either<E, B>>) => <A>(ma: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>>
 ```
 
-Added in v2.0.0
+Added in v2.11.0
+
+## orLeft
+
+**Signature**
+
+```ts
+export declare function orLeft<M extends URIS3>(
+  M: Monad3<M>
+): <E1, R, ME, E2>(
+  onLeft: (e: E1) => Kind3<M, R, ME, E2>
+) => <A>(fa: Kind3<M, R, ME, Either<E1, A>>) => Kind3<M, R, ME, Either<E2, A>>
+export declare function orLeft<M extends URIS3, ME>(
+  M: Monad3C<M, ME>
+): <E1, R, E2>(
+  onLeft: (e: E1) => Kind3<M, R, ME, E2>
+) => <A>(fa: Kind3<M, R, ME, Either<E1, A>>) => Kind3<M, R, ME, Either<E2, A>>
+export declare function orLeft<M extends URIS2>(
+  M: Monad2<M>
+): <E1, ME, E2>(
+  onLeft: (e: E1) => Kind2<M, ME, E2>
+) => <A>(fa: Kind2<M, ME, Either<E1, A>>) => Kind2<M, ME, Either<E2, A>>
+export declare function orLeft<M extends URIS2, ME>(
+  M: Monad2C<M, ME>
+): <E1, E2>(onLeft: (e: E1) => Kind2<M, ME, E2>) => <A>(fa: Kind2<M, ME, Either<E1, A>>) => Kind2<M, ME, Either<E2, A>>
+export declare function orLeft<M extends URIS>(
+  M: Monad1<M>
+): <E1, E2>(onLeft: (e: E1) => Kind<M, E2>) => <A>(fa: Kind<M, Either<E1, A>>) => Kind<M, Either<E2, A>>
+export declare function orLeft<M>(
+  M: Monad<M>
+): <E1, E2>(onLeft: (e: E1) => HKT<M, E2>) => <A>(fa: HKT<M, Either<E1, A>>) => HKT<M, Either<E2, A>>
+```
+
+Added in v2.11.0
+
+# pattern matching
+
+## match
+
+**Signature**
+
+```ts
+export declare function match<F extends URIS3>(
+  F: Functor3<F>
+): <E, B, A>(
+  onLeft: (e: E) => B,
+  onRight: (a: A) => B
+) => <R, ME>(ma: Kind3<F, R, ME, Either<E, A>>) => Kind3<F, R, ME, B>
+export declare function match<F extends URIS3, FE>(
+  F: Functor3C<F, FE>
+): <E, B, A>(onLeft: (e: E) => B, onRight: (a: A) => B) => <R>(ma: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, B>
+export declare function match<F extends URIS2>(
+  F: Functor2<F>
+): <E, B, A>(onLeft: (e: E) => B, onRight: (a: A) => B) => <FE>(ma: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, B>
+export declare function match<F extends URIS2, FE>(
+  F: Functor2C<F, FE>
+): <E, B, A>(onLeft: (e: E) => B, onRight: (a: A) => B) => (ma: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, B>
+export declare function match<F extends URIS>(
+  F: Functor1<F>
+): <E, B, A>(onLeft: (e: E) => B, onRight: (a: A) => B) => (ma: Kind<F, Either<E, A>>) => Kind<F, B>
+export declare function match<F>(
+  F: Functor<F>
+): <E, B, A>(onLeft: (e: E) => B, onRight: (a: A) => B) => (ma: HKT<F, Either<E, A>>) => HKT<F, B>
+```
+
+Added in v2.11.0
 
 # utils
 
@@ -88,66 +203,29 @@ Added in v2.0.0
 export declare function alt<M extends URIS3>(
   M: Monad3<M>
 ): <R, ME, E, A>(
-  second: Lazy<Kind3<M, R, ME, Either<E, A>>>
+  second: LazyArg<Kind3<M, R, ME, Either<E, A>>>
 ) => (first: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
 export declare function alt<M extends URIS3, ME>(
   M: Monad3C<M, ME>
 ): <R, E, A>(
-  second: Lazy<Kind3<M, R, ME, Either<E, A>>>
+  second: LazyArg<Kind3<M, R, ME, Either<E, A>>>
 ) => (first: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
 export declare function alt<M extends URIS2>(
   M: Monad2<M>
 ): <ME, E, A>(
-  second: Lazy<Kind2<M, ME, Either<E, A>>>
+  second: LazyArg<Kind2<M, ME, Either<E, A>>>
 ) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
 export declare function alt<M extends URIS2, ME>(
   M: Monad2C<M, ME>
-): <E, A>(second: Lazy<Kind2<M, ME, Either<E, A>>>) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
+): <E, A>(
+  second: LazyArg<Kind2<M, ME, Either<E, A>>>
+) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
 export declare function alt<M extends URIS>(
   M: Monad1<M>
-): <E, A>(second: Lazy<Kind<M, Either<E, A>>>) => (first: Kind<M, Either<E, A>>) => Kind<M, Either<E, A>>
+): <E, A>(second: LazyArg<Kind<M, Either<E, A>>>) => (first: Kind<M, Either<E, A>>) => Kind<M, Either<E, A>>
 export declare function alt<M>(
   M: Monad<M>
-): <E, A>(second: Lazy<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>>
-```
-
-Added in v2.10.0
-
-## altValidation
-
-**Signature**
-
-```ts
-export declare function altValidation<M extends URIS3, E>(
-  M: Monad3<M>,
-  S: Semigroup<E>
-): <R, ME, A>(
-  second: Lazy<Kind3<M, R, ME, Either<E, A>>>
-) => (first: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
-export declare function altValidation<M extends URIS3, ME, E>(
-  M: Monad3C<M, ME>,
-  S: Semigroup<E>
-): <R, A>(
-  second: Lazy<Kind3<M, R, ME, Either<E, A>>>
-) => (first: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
-export declare function altValidation<M extends URIS2, E>(
-  M: Monad2<M>,
-  S: Semigroup<E>
-): <ME, A>(
-  second: Lazy<Kind2<M, ME, Either<E, A>>>
-) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
-export declare function altValidation<M extends URIS2, ME, E>(
-  M: Monad2C<M, ME>,
-  S: Semigroup<E>
-): <A>(second: Lazy<Kind2<M, ME, Either<E, A>>>) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
-export declare function altValidation<M extends URIS, E>(
-  M: Monad1<M>,
-  S: Semigroup<E>
-): <A>(second: Lazy<Kind<M, Either<E, A>>>) => (first: Kind<M, Either<E, A>>) => Kind<M, Either<E, A>>
-export declare function altValidation<M, E>(
-  M: Monad<M>,
-  S: Semigroup<E>
-): <A>(second: Lazy<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>>
+): <E, A>(second: LazyArg<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>>
 ```
 
 Added in v2.10.0
@@ -197,25 +275,25 @@ export declare function bimap<F extends URIS3>(
 ): <E, G, A, B>(
   f: (e: E) => G,
   g: (a: A) => B
-) => <R, FE>(fea: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, B>>
+) => <R, FE>(self: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, B>>
 export declare function bimap<F extends URIS3, FE>(
   F: Functor3C<F, FE>
 ): <E, G, A, B>(
   f: (e: E) => G,
   g: (a: A) => B
-) => <R>(fea: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, B>>
+) => <R>(self: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, B>>
 export declare function bimap<F extends URIS2>(
   F: Functor2<F>
-): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => <FE>(fea: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, B>>
+): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => <FE>(self: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, B>>
 export declare function bimap<F extends URIS2, FE>(
   F: Functor2C<F, FE>
-): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (fea: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, B>>
+): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (self: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, B>>
 export declare function bimap<F extends URIS>(
   F: Functor1<F>
-): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (fea: Kind<F, Either<E, A>>) => Kind<F, Either<G, B>>
+): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (self: Kind<F, Either<E, A>>) => Kind<F, Either<G, B>>
 export declare function bimap<F>(
   F: Functor<F>
-): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (fea: HKT<F, Either<E, A>>) => HKT<F, Either<G, B>>
+): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (self: HKT<F, Either<E, A>>) => HKT<F, Either<G, B>>
 ```
 
 Added in v2.10.0
@@ -481,55 +559,25 @@ Added in v2.10.0
 ```ts
 export declare function mapLeft<F extends URIS3>(
   F: Functor3<F>
-): <E, G>(f: (e: E) => G) => <R, FE, A>(fea: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <R, FE, A>(self: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, A>>
 export declare function mapLeft<F extends URIS3, FE>(
   F: Functor3C<F, FE>
-): <E, G>(f: (e: E) => G) => <R, A>(fea: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <R, A>(self: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, A>>
 export declare function mapLeft<F extends URIS2>(
   F: Functor2<F>
-): <E, G>(f: (e: E) => G) => <FE, A>(fea: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <FE, A>(self: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, A>>
 export declare function mapLeft<F extends URIS2, FE>(
   F: Functor2C<F, FE>
-): <E, G>(f: (e: E) => G) => <A>(fea: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <A>(self: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, A>>
 export declare function mapLeft<F extends URIS>(
   F: Functor1<F>
-): <E, G>(f: (e: E) => G) => <A>(fea: Kind<F, Either<E, A>>) => Kind<F, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <A>(self: Kind<F, Either<E, A>>) => Kind<F, Either<G, A>>
 export declare function mapLeft<F>(
   F: Functor<F>
-): <E, G>(f: (e: E) => G) => <A>(fea: HKT<F, Either<E, A>>) => HKT<F, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <A>(self: HKT<F, Either<E, A>>) => HKT<F, Either<G, A>>
 ```
 
 Added in v2.10.0
-
-## match
-
-**Signature**
-
-```ts
-export declare function match<F extends URIS3>(
-  F: Functor3<F>
-): <E, B, A>(
-  onLeft: (e: E) => B,
-  onRight: (a: A) => B
-) => <R, ME>(ma: Kind3<F, R, ME, Either<E, A>>) => Kind3<F, R, ME, B>
-export declare function match<F extends URIS3, FE>(
-  F: Functor3C<F, FE>
-): <E, B, A>(onLeft: (e: E) => B, onRight: (a: A) => B) => <R>(ma: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, B>
-export declare function match<F extends URIS2>(
-  F: Functor2<F>
-): <E, B, A>(onLeft: (e: E) => B, onRight: (a: A) => B) => <FE>(ma: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, B>
-export declare function match<F extends URIS2, FE>(
-  F: Functor2C<F, FE>
-): <E, B, A>(onLeft: (e: E) => B, onRight: (a: A) => B) => (ma: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, B>
-export declare function match<F extends URIS>(
-  F: Functor1<F>
-): <E, B, A>(onLeft: (e: E) => B, onRight: (a: A) => B) => (ma: Kind<F, Either<E, A>>) => Kind<F, B>
-export declare function match<F>(
-  F: Functor<F>
-): <E, B, A>(onLeft: (e: E) => B, onRight: (a: A) => B) => (ma: HKT<F, Either<E, A>>) => HKT<F, B>
-```
-
-Added in v2.11.0
 
 ## matchE
 
@@ -604,74 +652,6 @@ export declare function orElse<M>(
 ```
 
 Added in v2.10.0
-
-## orElseFirst
-
-**Signature**
-
-```ts
-export declare function orElseFirst<M extends URIS3>(
-  M: Monad3<M>
-): <E, R, ME, B>(
-  onLeft: (e: E) => Kind3<M, R, ME, Either<E, B>>
-) => <A>(ma: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
-export declare function orElseFirst<M extends URIS3, ME>(
-  M: Monad3C<M, ME>
-): <E, R, B>(
-  onLeft: (e: E) => Kind3<M, R, ME, Either<E, B>>
-) => <A>(ma: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
-export declare function orElseFirst<M extends URIS2>(
-  M: Monad2<M>
-): <E, ME, B>(
-  onLeft: (e: E) => Kind2<M, ME, Either<E, B>>
-) => <A>(ma: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
-export declare function orElseFirst<M extends URIS2, ME>(
-  M: Monad2C<M, ME>
-): <E, B>(
-  onLeft: (e: E) => Kind2<M, ME, Either<E, B>>
-) => <A>(ma: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
-export declare function orElseFirst<M extends URIS>(
-  M: Monad1<M>
-): <E, B>(onLeft: (e: E) => Kind<M, Either<E, B>>) => <A>(ma: Kind<M, Either<E, A>>) => Kind<M, Either<E, A>>
-export declare function orElseFirst<M>(
-  M: Monad<M>
-): <E, B>(onLeft: (e: E) => HKT<M, Either<E, B>>) => <A>(ma: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>>
-```
-
-Added in v2.11.0
-
-## orLeft
-
-**Signature**
-
-```ts
-export declare function orLeft<M extends URIS3>(
-  M: Monad3<M>
-): <E1, R, ME, E2>(
-  onLeft: (e: E1) => Kind3<M, R, ME, E2>
-) => <A>(fa: Kind3<M, R, ME, Either<E1, A>>) => Kind3<M, R, ME, Either<E2, A>>
-export declare function orLeft<M extends URIS3, ME>(
-  M: Monad3C<M, ME>
-): <E1, R, E2>(
-  onLeft: (e: E1) => Kind3<M, R, ME, E2>
-) => <A>(fa: Kind3<M, R, ME, Either<E1, A>>) => Kind3<M, R, ME, Either<E2, A>>
-export declare function orLeft<M extends URIS2>(
-  M: Monad2<M>
-): <E1, ME, E2>(
-  onLeft: (e: E1) => Kind2<M, ME, E2>
-) => <A>(fa: Kind2<M, ME, Either<E1, A>>) => Kind2<M, ME, Either<E2, A>>
-export declare function orLeft<M extends URIS2, ME>(
-  M: Monad2C<M, ME>
-): <E1, E2>(onLeft: (e: E1) => Kind2<M, ME, E2>) => <A>(fa: Kind2<M, ME, Either<E1, A>>) => Kind2<M, ME, Either<E2, A>>
-export declare function orLeft<M extends URIS>(
-  M: Monad1<M>
-): <E1, E2>(onLeft: (e: E1) => Kind<M, E2>) => <A>(fa: Kind<M, Either<E1, A>>) => Kind<M, Either<E2, A>>
-export declare function orLeft<M>(
-  M: Monad<M>
-): <E1, E2>(onLeft: (e: E1) => HKT<M, E2>) => <A>(fa: HKT<M, Either<E1, A>>) => HKT<M, Either<E2, A>>
-```
-
-Added in v2.11.0
 
 ## right
 
@@ -763,6 +743,8 @@ export declare function toUnion<F>(F: Functor<F>): <E, A>(fa: HKT<F, Either<E, A
 
 Added in v2.10.0
 
+# zone of death
+
 ## ~~EitherM1~~ (interface)
 
 **Signature**
@@ -770,7 +752,7 @@ Added in v2.10.0
 ```ts
 export interface EitherM1<M extends URIS> extends ApplicativeComposition12<M, URI> {
   readonly chain: <E, A, B>(ma: EitherT1<M, E, A>, f: (a: A) => EitherT1<M, E, B>) => EitherT1<M, E, B>
-  readonly alt: <E, A>(fa: EitherT1<M, E, A>, that: Lazy<EitherT1<M, E, A>>) => EitherT1<M, E, A>
+  readonly alt: <E, A>(fa: EitherT1<M, E, A>, that: LazyArg<EitherT1<M, E, A>>) => EitherT1<M, E, A>
   readonly bimap: <E, A, N, B>(ma: EitherT1<M, E, A>, f: (e: E) => N, g: (a: A) => B) => EitherT1<M, N, B>
   readonly mapLeft: <E, A, N>(ma: EitherT1<M, E, A>, f: (e: E) => N) => EitherT1<M, N, A>
   readonly fold: <E, A, R>(
@@ -796,7 +778,7 @@ Added in v2.0.0
 ```ts
 export interface EitherM2<M extends URIS2> extends ApplicativeComposition22<M, URI> {
   readonly chain: <R, E, A, B>(ma: EitherT2<M, R, E, A>, f: (a: A) => EitherT2<M, R, E, B>) => EitherT2<M, R, E, B>
-  readonly alt: <R, E, A>(fa: EitherT2<M, R, E, A>, that: Lazy<EitherT2<M, R, E, A>>) => EitherT2<M, R, E, A>
+  readonly alt: <R, E, A>(fa: EitherT2<M, R, E, A>, that: LazyArg<EitherT2<M, R, E, A>>) => EitherT2<M, R, E, A>
   readonly bimap: <R, E, A, N, B>(ma: EitherT2<M, R, E, A>, f: (e: E) => N, g: (a: A) => B) => EitherT2<M, R, N, B>
   readonly mapLeft: <R, E, A, N>(ma: EitherT2<M, R, E, A>, f: (e: E) => N) => EitherT2<M, R, N, A>
   readonly fold: <R, E, A, B>(
@@ -825,7 +807,7 @@ Added in v2.0.0
 ```ts
 export interface EitherM<M> extends ApplicativeCompositionHKT2<M, URI> {
   readonly chain: <E, A, B>(ma: EitherT<M, E, A>, f: (a: A) => EitherT<M, E, B>) => EitherT<M, E, B>
-  readonly alt: <E, A>(fa: EitherT<M, E, A>, that: Lazy<EitherT<M, E, A>>) => EitherT<M, E, A>
+  readonly alt: <E, A>(fa: EitherT<M, E, A>, that: LazyArg<EitherT<M, E, A>>) => EitherT<M, E, A>
   readonly bimap: <E, A, N, B>(ma: EitherT<M, E, A>, f: (e: E) => N, g: (a: A) => B) => EitherT<M, N, B>
   readonly mapLeft: <E, A, N>(ma: EitherT<M, E, A>, f: (e: E) => N) => EitherT<M, N, A>
   readonly fold: <E, A, R>(ma: EitherT<M, E, A>, onLeft: (e: E) => HKT<M, R>, onRight: (a: A) => HKT<M, R>) => HKT<M, R>
@@ -836,6 +818,36 @@ export interface EitherM<M> extends ApplicativeCompositionHKT2<M, URI> {
   readonly leftM: <E, A>(me: HKT<M, E>) => EitherT<M, E, A>
   readonly left: <E, A>(e: E) => EitherT<M, E, A>
 }
+```
+
+Added in v2.0.0
+
+## ~~EitherT1~~ (type alias)
+
+**Signature**
+
+```ts
+export type EitherT1<M extends URIS, E, A> = Kind<M, Either<E, A>>
+```
+
+Added in v2.0.0
+
+## ~~EitherT2~~ (type alias)
+
+**Signature**
+
+```ts
+export type EitherT2<M extends URIS2, R, E, A> = Kind2<M, R, Either<E, A>>
+```
+
+Added in v2.0.0
+
+## ~~EitherT~~ (interface)
+
+**Signature**
+
+```ts
+export interface EitherT<M, E, A> extends HKT<M, Either<E, A>> {}
 ```
 
 Added in v2.0.0

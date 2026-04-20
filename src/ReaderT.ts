@@ -1,4 +1,8 @@
 /**
+ * The reader monad transformer, which adds a read-only environment to the given monad.
+ *
+ * The `of` function ignores the environment, while `chain` passes the inherited environment to both subcomputations.
+ *
  * @since 2.0.0
  */
 import { Apply, Apply1, Apply2, Apply2C, Apply3, Apply3C, Apply4 } from './Apply'
@@ -8,10 +12,10 @@ import { Functor, Functor1, Functor2, Functor2C, Functor3, Functor3C, Functor4 }
 import { HKT, Kind, Kind2, Kind3, Kind4, URIS, URIS2, URIS3, URIS4 } from './HKT'
 import { Monad, Monad1, Monad2, Monad2C, Monad3 } from './Monad'
 import {
-  NaturalTransformation22,
-  NaturalTransformation12,
-  NaturalTransformation11,
   NaturalTransformation,
+  NaturalTransformation11,
+  NaturalTransformation12,
+  NaturalTransformation22,
   NaturalTransformation23R,
   NaturalTransformation24S
 } from './NaturalTransformation'
@@ -133,7 +137,23 @@ export function chain<M>(
 export function chain<M>(
   M: Chain<M>
 ): <A, R, B>(f: (a: A) => Reader<R, HKT<M, B>>) => (ma: Reader<R, HKT<M, A>>) => Reader<R, HKT<M, B>> {
-  return (f) => (ma) => (r) => M.chain(ma(r), (a) => f(a)(r))
+  const flatMapM = flatMap(M)
+  return (f) => (ma) => flatMapM(ma, f)
+}
+
+/** @internal */
+export function flatMap<M extends URIS>(
+  M: Chain1<M>
+): <R, A, B>(ma: Reader<R, Kind<M, A>>, f: (a: A) => Reader<R, Kind<M, B>>) => Reader<R, Kind<M, B>>
+/** @internal */
+export function flatMap<M>(
+  M: Chain<M>
+): <R, A, B>(ma: Reader<R, HKT<M, A>>, f: (a: A) => Reader<R, HKT<M, B>>) => Reader<R, HKT<M, B>>
+/** @internal */
+export function flatMap<M>(
+  M: Chain<M>
+): <R, A, B>(ma: Reader<R, HKT<M, A>>, f: (a: A) => Reader<R, HKT<M, B>>) => Reader<R, HKT<M, B>> {
+  return (ma, f) => (r) => M.chain(ma(r), (a) => f(a)(r))
 }
 
 /**
@@ -190,10 +210,8 @@ export function fromNaturalTransformation<F, G>(
 // deprecated
 // -------------------------------------------------------------------------------------
 
-// tslint:disable: deprecation
-
 /**
- * @category model
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -202,6 +220,7 @@ export interface ReaderT<M, R, A> {
 }
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -218,7 +237,7 @@ export interface ReaderM<M> {
 }
 
 /**
- * @category model
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -227,6 +246,7 @@ export interface ReaderT1<M extends URIS, R, A> {
 }
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -243,7 +263,7 @@ export interface ReaderM1<M extends URIS> {
 }
 
 /**
- * @category model
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -252,6 +272,7 @@ export interface ReaderT2<M extends URIS2, R, E, A> {
 }
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -268,6 +289,7 @@ export interface ReaderM2<M extends URIS2> {
 }
 
 /**
+ * @category zone of death
  * @since 2.2.0
  * @deprecated
  */
@@ -284,6 +306,7 @@ export interface ReaderM2C<M extends URIS2, E> {
 }
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -292,6 +315,7 @@ export interface ReaderT3<M extends URIS3, R, U, E, A> {
 }
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -314,6 +338,7 @@ export interface ReaderM3<M extends URIS3> {
 }
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */

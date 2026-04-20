@@ -18,10 +18,11 @@ Added in v2.0.0
   - [getRing](#getring)
   - [getSemigroup](#getsemigroup)
   - [getSemiring](#getsemiring)
-  - [~~getEndomorphismMonoid~~](#getendomorphismmonoid)
+- [lagacy](#lagacy)
+  - [Lazy (interface)](#lazy-interface)
 - [utils](#utils)
   - [FunctionN (interface)](#functionn-interface)
-  - [Lazy (interface)](#lazy-interface)
+  - [LazyArg (interface)](#lazyarg-interface)
   - [SK](#sk)
   - [absurd](#absurd)
   - [apply](#apply)
@@ -42,9 +43,11 @@ Added in v2.0.0
   - [tupled](#tupled)
   - [unsafeCoerce](#unsafecoerce)
   - [untupled](#untupled)
+- [zone of death](#zone-of-death)
   - [~~Endomorphism~~ (interface)](#endomorphism-interface)
   - [~~Predicate~~ (interface)](#predicate-interface)
   - [~~Refinement~~ (interface)](#refinement-interface)
+  - [~~getEndomorphismMonoid~~](#getendomorphismmonoid)
   - [~~not~~](#not)
 
 ---
@@ -146,17 +149,21 @@ export declare const getSemiring: <A, B>(S: Semiring<B>) => Semiring<(a: A) => B
 
 Added in v2.10.0
 
-## ~~getEndomorphismMonoid~~
+# lagacy
 
-Use `Endomorphism` module instead.
+## Lazy (interface)
+
+Use `LazyArg` instead.
 
 **Signature**
 
 ```ts
-export declare const getEndomorphismMonoid: <A = never>() => Monoid<Endomorphism<A>>
+export interface Lazy<A> {
+  (): A
+}
 ```
 
-Added in v2.10.0
+Added in v2.0.0
 
 # utils
 
@@ -180,19 +187,19 @@ export const sum: FunctionN<[number, number], number> = (a, b) => a + b
 
 Added in v2.0.0
 
-## Lazy (interface)
+## LazyArg (interface)
 
-A _thunk_
+A lazy argument.
 
 **Signature**
 
 ```ts
-export interface Lazy<A> {
+export interface LazyArg<A> {
   (): A
 }
 ```
 
-Added in v2.0.0
+Added in v2.15.0
 
 ## SK
 
@@ -231,7 +238,7 @@ A thunk that returns always `false`.
 **Signature**
 
 ```ts
-export declare const constFalse: Lazy<boolean>
+export declare const constFalse: LazyArg<boolean>
 ```
 
 Added in v2.0.0
@@ -243,7 +250,7 @@ A thunk that returns always `null`.
 **Signature**
 
 ```ts
-export declare const constNull: Lazy<null>
+export declare const constNull: LazyArg<null>
 ```
 
 Added in v2.0.0
@@ -255,7 +262,7 @@ A thunk that returns always `true`.
 **Signature**
 
 ```ts
-export declare const constTrue: Lazy<boolean>
+export declare const constTrue: LazyArg<boolean>
 ```
 
 Added in v2.0.0
@@ -267,7 +274,7 @@ A thunk that returns always `undefined`.
 **Signature**
 
 ```ts
-export declare const constUndefined: Lazy<undefined>
+export declare const constUndefined: LazyArg<undefined>
 ```
 
 Added in v2.0.0
@@ -279,7 +286,7 @@ A thunk that returns always `void`.
 **Signature**
 
 ```ts
-export declare const constVoid: Lazy<void>
+export declare const constVoid: LazyArg<void>
 ```
 
 Added in v2.0.0
@@ -289,7 +296,7 @@ Added in v2.0.0
 **Signature**
 
 ```ts
-export declare function constant<A>(a: A): Lazy<A>
+export declare function constant<A>(a: A): LazyArg<A>
 ```
 
 Added in v2.0.0
@@ -306,12 +313,23 @@ Added in v2.0.0
 
 ## flip
 
-Flips the order of the arguments of a function of two arguments.
+Flips the arguments of a curried function.
 
 **Signature**
 
 ```ts
+export declare function flip<A, B, C>(f: (a: A) => (b: B) => C): (b: B) => (a: A) => C
 export declare function flip<A, B, C>(f: (a: A, b: B) => C): (b: B, a: A) => C
+```
+
+**Example**
+
+```ts
+import { flip } from 'fp-ts/function'
+
+const f = (a: number) => (b: string) => a - b.length
+
+assert.strictEqual(flip(f)('aaa')(2), -1)
 ```
 
 Added in v2.0.0
@@ -747,6 +765,8 @@ export declare function untupled<A extends ReadonlyArray<unknown>, B>(f: (a: A) 
 
 Added in v2.4.0
 
+# zone of death
+
 ## ~~Endomorphism~~ (interface)
 
 Use `Endomorphism` module instead.
@@ -788,6 +808,18 @@ export interface Refinement<A, B extends A> {
 ```
 
 Added in v2.0.0
+
+## ~~getEndomorphismMonoid~~
+
+Use `Endomorphism` module instead.
+
+**Signature**
+
+```ts
+export declare const getEndomorphismMonoid: <A = never>() => Monoid<Endomorphism<A>>
+```
+
+Added in v2.10.0
 
 ## ~~not~~
 

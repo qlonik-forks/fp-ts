@@ -21,26 +21,19 @@ Added in v2.0.0
 
 <h2 class="text-delta">Table of contents</h2>
 
-- [Apply](#apply)
-  - [ap](#ap)
-- [FromTask](#fromtask)
-  - [~~fromTask~~](#fromtask)
-- [Functor](#functor)
-  - [map](#map)
-- [Monad](#monad)
-  - [chain](#chain)
-- [Pointed](#pointed)
-  - [of](#of)
 - [combinators](#combinators)
-  - [apFirst](#apfirst)
-  - [apSecond](#apsecond)
-  - [chainFirst](#chainfirst)
-  - [chainFirstIOK](#chainfirstiok)
-  - [chainIOK](#chainiok)
-  - [delay](#delay)
-  - [flap](#flap)
-  - [flatten](#flatten)
-  - [fromIOK](#fromiok)
+  - [tap](#tap)
+  - [tapIO](#tapio)
+- [constructors](#constructors)
+  - [of](#of)
+- [conversions](#conversions)
+  - [fromIO](#fromio)
+- [do notation](#do-notation)
+  - [Do](#do)
+  - [apS](#aps)
+  - [bind](#bind)
+  - [bindTo](#bindto)
+  - [let](#let)
 - [instances](#instances)
   - [ApplicativePar](#applicativepar)
   - [ApplicativeSeq](#applicativeseq)
@@ -48,30 +41,32 @@ Added in v2.0.0
   - [ApplySeq](#applyseq)
   - [Chain](#chain)
   - [FromIO](#fromio)
-  - [FromTask](#fromtask-1)
-  - [Functor](#functor-1)
-  - [Monad](#monad-1)
+  - [FromTask](#fromtask)
+  - [Functor](#functor)
+  - [Monad](#monad)
   - [MonadIO](#monadio)
   - [MonadTask](#monadtask)
-  - [Pointed](#pointed-1)
-  - [URI](#uri)
-  - [URI (type alias)](#uri-type-alias)
+  - [Pointed](#pointed)
   - [getRaceMonoid](#getracemonoid)
-  - [~~getMonoid~~](#getmonoid)
-  - [~~getSemigroup~~](#getsemigroup)
-  - [~~taskSeq~~](#taskseq)
-  - [~~task~~](#task)
+- [legacy](#legacy)
+  - [chain](#chain)
+  - [chainFirst](#chainfirst)
+  - [chainFirstIOK](#chainfirstiok)
+  - [chainIOK](#chainiok)
+- [lifting](#lifting)
+  - [fromIOK](#fromiok)
+- [mapping](#mapping)
+  - [as](#as)
+  - [asUnit](#asunit)
+  - [flap](#flap)
+  - [map](#map)
 - [model](#model)
   - [Task (interface)](#task-interface)
-- [natural transformations](#natural-transformations)
-  - [fromIO](#fromio)
-- [utils](#utils)
-  - [ApT](#apt)
-  - [Do](#do)
-  - [apS](#aps)
-  - [bind](#bind)
-  - [bindTo](#bindto)
-  - [never](#never)
+- [sequencing](#sequencing)
+  - [flatMap](#flatmap)
+  - [flatMapIO](#flatmapio)
+  - [flatten](#flatten)
+- [traversing](#traversing)
   - [sequenceArray](#sequencearray)
   - [sequenceSeqArray](#sequenceseqarray)
   - [traverseArray](#traversearray)
@@ -82,65 +77,80 @@ Added in v2.0.0
   - [traverseReadonlyNonEmptyArrayWithIndexSeq](#traversereadonlynonemptyarraywithindexseq)
   - [traverseSeqArray](#traverseseqarray)
   - [traverseSeqArrayWithIndex](#traverseseqarraywithindex)
+- [type lambdas](#type-lambdas)
+  - [URI](#uri)
+  - [URI (type alias)](#uri-type-alias)
+- [utils](#utils)
+  - [ApT](#apt)
+  - [ap](#ap)
+  - [apFirst](#apfirst)
+  - [apSecond](#apsecond)
+  - [delay](#delay)
+  - [never](#never)
+- [zone of death](#zone-of-death)
+  - [~~fromTask~~](#fromtask)
+  - [~~getMonoid~~](#getmonoid)
+  - [~~getSemigroup~~](#getsemigroup)
+  - [~~taskSeq~~](#taskseq)
+  - [~~task~~](#task)
 
 ---
 
-# Apply
+# combinators
 
-## ap
+## tap
 
-Apply a function to an argument under a type constructor.
-
-**Signature**
-
-```ts
-export declare const ap: <A>(fa: Task<A>) => <B>(fab: Task<(a: A) => B>) => Task<B>
-```
-
-Added in v2.0.0
-
-# FromTask
-
-## ~~fromTask~~
+Composes computations in sequence, using the return value of one computation to determine the next computation and
+keeping only the result of the first.
 
 **Signature**
 
 ```ts
-export declare const fromTask: NaturalTransformation11<'Task', 'Task'>
+export declare const tap: {
+  <A, _>(self: Task<A>, f: (a: A) => Task<_>): Task<A>
+  <A, _>(f: (a: A) => Task<_>): (self: Task<A>) => Task<A>
+}
 ```
 
-Added in v2.7.0
+Added in v2.15.0
 
-# Functor
+## tapIO
 
-## map
-
-`map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
-use the type constructor `F` to represent some computational context.
+Composes computations in sequence, using the return value of one computation to determine the next computation and
+keeping only the result of the first.
 
 **Signature**
 
 ```ts
-export declare const map: <A, B>(f: (a: A) => B) => (fa: Task<A>) => Task<B>
+export declare const tapIO: {
+  <A, _>(f: (a: A) => IO<_>): (self: Task<A>) => Task<A>
+  <A, _>(self: Task<A>, f: (a: A) => IO<_>): Task<A>
+}
 ```
 
-Added in v2.0.0
-
-# Monad
-
-## chain
-
-Composes computations in sequence, using the return value of one computation to determine the next computation.
-
-**Signature**
+**Example**
 
 ```ts
-export declare const chain: <A, B>(f: (a: A) => Task<B>) => (ma: Task<A>) => Task<B>
+import { pipe } from 'fp-ts/function'
+import * as T from 'fp-ts/Task'
+import * as Console from 'fp-ts/Console'
+
+// Will produce `Hello, fp-ts` to the stdout
+const effect = pipe(
+  T.of('fp-ts'),
+  T.tapIO((value) => Console.log(`Hello, ${value}`))
+)
+
+async function test() {
+  assert.deepStrictEqual(await effect(), 'fp-ts')
+}
+
+test()
 ```
 
-Added in v2.0.0
+Added in v2.16.0
 
-# Pointed
+# constructors
 
 ## of
 
@@ -152,144 +162,84 @@ export declare const of: <A>(a: A) => Task<A>
 
 Added in v2.0.0
 
-# combinators
+# conversions
 
-## apFirst
-
-Combine two effectful actions, keeping only the result of the first.
-
-Derivable from `Apply`.
+## fromIO
 
 **Signature**
 
 ```ts
-export declare const apFirst: <B>(second: Task<B>) => <A>(first: Task<A>) => Task<A>
+export declare const fromIO: <A>(fa: IO<A>) => Task<A>
 ```
 
 Added in v2.0.0
 
-## apSecond
+# do notation
 
-Combine two effectful actions, keeping only the result of the second.
-
-Derivable from `Apply`.
+## Do
 
 **Signature**
 
 ```ts
-export declare const apSecond: <B>(second: Task<B>) => <A>(first: Task<A>) => Task<B>
+export declare const Do: Task<{}>
 ```
 
-Added in v2.0.0
+Added in v2.9.0
 
-## chainFirst
-
-Composes computations in sequence, using the return value of one computation to determine the next computation and
-keeping only the result of the first.
-
-Derivable from `Chain`.
+## apS
 
 **Signature**
 
 ```ts
-export declare const chainFirst: <A, B>(f: (a: A) => Task<B>) => (first: Task<A>) => Task<A>
+export declare const apS: <N, A, B>(
+  name: Exclude<N, keyof A>,
+  fb: Task<B>
+) => (fa: Task<A>) => Task<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
 ```
 
-Added in v2.0.0
+Added in v2.8.0
 
-## chainFirstIOK
+## bind
 
 **Signature**
 
 ```ts
-export declare const chainFirstIOK: <A, B>(f: (a: A) => IO<B>) => (first: Task<A>) => Task<A>
+export declare const bind: <N, A, B>(
+  name: Exclude<N, keyof A>,
+  f: (a: A) => Task<B>
+) => (ma: Task<A>) => Task<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
 ```
 
-Added in v2.10.0
+Added in v2.8.0
 
-## chainIOK
+## bindTo
 
 **Signature**
 
 ```ts
-export declare const chainIOK: <A, B>(f: (a: A) => IO<B>) => (first: Task<A>) => Task<B>
+export declare const bindTo: <N>(name: N) => <A>(fa: Task<A>) => Task<{ readonly [K in N]: A }>
 ```
 
-Added in v2.4.0
+Added in v2.8.0
 
-## delay
-
-Creates a task that will complete after a time delay
+## let
 
 **Signature**
 
 ```ts
-export declare function delay(millis: number): <A>(ma: Task<A>) => Task<A>
+export declare const let: <N, A, B>(
+  name: Exclude<N, keyof A>,
+  f: (a: A) => B
+) => (fa: Task<A>) => Task<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
 ```
 
-**Example**
-
-```ts
-import { sequenceT } from 'fp-ts/Apply'
-import * as T from 'fp-ts/Task'
-import { takeRight } from 'fp-ts/Array'
-
-async function test() {
-  const log: Array<string> = []
-  const append = (message: string): T.Task<void> =>
-    T.fromIO(() => {
-      log.push(message)
-    })
-  const fa = append('a')
-  const fb = T.delay(20)(append('b'))
-  const fc = T.delay(10)(append('c'))
-  const fd = append('d')
-  await sequenceT(T.ApplyPar)(fa, fb, fc, fd)()
-  assert.deepStrictEqual(takeRight(2)(log), ['c', 'b'])
-}
-
-test()
-```
-
-Added in v2.0.0
-
-## flap
-
-Derivable from `Functor`.
-
-**Signature**
-
-```ts
-export declare const flap: <A>(a: A) => <B>(fab: Task<(a: A) => B>) => Task<B>
-```
-
-Added in v2.10.0
-
-## flatten
-
-Derivable from `Chain`.
-
-**Signature**
-
-```ts
-export declare const flatten: <A>(mma: Task<Task<A>>) => Task<A>
-```
-
-Added in v2.0.0
-
-## fromIOK
-
-**Signature**
-
-```ts
-export declare const fromIOK: <A, B>(f: (...a: A) => IO<B>) => (...a: A) => Task<B>
-```
-
-Added in v2.4.0
+Added in v2.13.0
 
 # instances
 
 ## ApplicativePar
+
+Runs computations in parallel.
 
 **Signature**
 
@@ -301,6 +251,8 @@ Added in v2.7.0
 
 ## ApplicativeSeq
 
+Runs computations sequentially.
+
 **Signature**
 
 ```ts
@@ -311,6 +263,8 @@ Added in v2.7.0
 
 ## ApplyPar
 
+Runs computations in parallel.
+
 **Signature**
 
 ```ts
@@ -320,6 +274,8 @@ export declare const ApplyPar: Apply1<'Task'>
 Added in v2.10.0
 
 ## ApplySeq
+
+Runs computations sequentially.
 
 **Signature**
 
@@ -334,7 +290,7 @@ Added in v2.10.0
 **Signature**
 
 ```ts
-export declare const Chain: Chain1<'Task'>
+export declare const Chain: chainable.Chain1<'Task'>
 ```
 
 Added in v2.10.0
@@ -409,26 +365,6 @@ export declare const Pointed: Pointed1<'Task'>
 
 Added in v2.10.0
 
-## URI
-
-**Signature**
-
-```ts
-export declare const URI: 'Task'
-```
-
-Added in v2.0.0
-
-## URI (type alias)
-
-**Signature**
-
-```ts
-export type URI = typeof URI
-```
-
-Added in v2.0.0
-
 ## getRaceMonoid
 
 Monoid returning the first completed task.
@@ -458,52 +394,113 @@ test()
 
 Added in v2.0.0
 
-## ~~getMonoid~~
+# legacy
 
-Use [`getApplicativeMonoid`](./Applicative.ts.html#getapplicativemonoid) instead.
+## chain
 
-Lift a monoid into 'Task', the inner values are concatenated using the provided `Monoid`.
+Alias of `flatMap`.
 
 **Signature**
 
 ```ts
-export declare const getMonoid: <A>(M: Monoid<A>) => Monoid<Task<A>>
+export declare const chain: <A, B>(f: (a: A) => Task<B>) => (ma: Task<A>) => Task<B>
 ```
 
 Added in v2.0.0
 
-## ~~getSemigroup~~
+## chainFirst
 
-Use [`getApplySemigroup`](./Apply.ts.html#getapplysemigroup) instead.
+Alias of `tap`.
 
 **Signature**
 
 ```ts
-export declare const getSemigroup: <A>(S: Semigroup<A>) => Semigroup<Task<A>>
+export declare const chainFirst: <A, B>(f: (a: A) => Task<B>) => (first: Task<A>) => Task<A>
 ```
 
 Added in v2.0.0
 
-## ~~taskSeq~~
+## chainFirstIOK
 
-Use small, specific instances instead.
+Alias of `tapIO`.
 
 **Signature**
 
 ```ts
-export declare const taskSeq: Monad1<'Task'> & MonadTask1<'Task'>
+export declare const chainFirstIOK: <A, B>(f: (a: A) => IO<B>) => (first: Task<A>) => Task<A>
 ```
 
-Added in v2.0.0
+Added in v2.10.0
 
-## ~~task~~
+## chainIOK
 
-Use small, specific instances instead.
+Alias of `flatMapIO`.
 
 **Signature**
 
 ```ts
-export declare const task: Monad1<'Task'> & MonadTask1<'Task'>
+export declare const chainIOK: <A, B>(f: (a: A) => IO<B>) => (first: Task<A>) => Task<B>
+```
+
+Added in v2.4.0
+
+# lifting
+
+## fromIOK
+
+**Signature**
+
+```ts
+export declare const fromIOK: <A extends readonly unknown[], B>(f: (...a: A) => IO<B>) => (...a: A) => Task<B>
+```
+
+Added in v2.4.0
+
+# mapping
+
+## as
+
+Maps the value to the specified constant value.
+
+**Signature**
+
+```ts
+export declare const as: { <A>(a: A): <_>(self: Task<_>) => Task<A>; <_, A>(self: Task<_>, a: A): Task<A> }
+```
+
+Added in v2.16.0
+
+## asUnit
+
+Maps the value to the void constant value.
+
+**Signature**
+
+```ts
+export declare const asUnit: <_>(self: Task<_>) => Task<void>
+```
+
+Added in v2.16.0
+
+## flap
+
+**Signature**
+
+```ts
+export declare const flap: <A>(a: A) => <B>(fab: Task<(a: A) => B>) => Task<B>
+```
+
+Added in v2.10.0
+
+## map
+
+`map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
+use the type constructor `F` to represent some computational context.
+
+**Signature**
+
+```ts
+export declare const map: <A, B>(f: (a: A) => B) => (fa: Task<A>) => Task<B>
 ```
 
 Added in v2.0.0
@@ -522,89 +519,49 @@ export interface Task<A> {
 
 Added in v2.0.0
 
-# natural transformations
+# sequencing
 
-## fromIO
+## flatMap
 
 **Signature**
 
 ```ts
-export declare const fromIO: NaturalTransformation11<'IO', 'Task'>
+export declare const flatMap: {
+  <A, B>(f: (a: A) => Task<B>): (ma: Task<A>) => Task<B>
+  <A, B>(ma: Task<A>, f: (a: A) => Task<B>): Task<B>
+}
+```
+
+Added in v2.14.0
+
+## flatMapIO
+
+**Signature**
+
+```ts
+export declare const flatMapIO: {
+  <A, B>(f: (a: A) => IO<B>): (self: Task<A>) => Task<B>
+  <A, B>(self: Task<A>, f: (a: A) => IO<B>): Task<B>
+}
+```
+
+Added in v2.16.0
+
+## flatten
+
+**Signature**
+
+```ts
+export declare const flatten: <A>(mma: Task<Task<A>>) => Task<A>
 ```
 
 Added in v2.0.0
 
-# utils
-
-## ApT
-
-**Signature**
-
-```ts
-export declare const ApT: Task<readonly []>
-```
-
-Added in v2.11.0
-
-## Do
-
-**Signature**
-
-```ts
-export declare const Do: Task<{}>
-```
-
-Added in v2.9.0
-
-## apS
-
-**Signature**
-
-```ts
-export declare const apS: <N, A, B>(
-  name: Exclude<N, keyof A>,
-  fb: Task<B>
-) => (fa: Task<A>) => Task<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
-```
-
-Added in v2.8.0
-
-## bind
-
-**Signature**
-
-```ts
-export declare const bind: <N, A, B>(
-  name: Exclude<N, keyof A>,
-  f: (a: A) => Task<B>
-) => (ma: Task<A>) => Task<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
-```
-
-Added in v2.8.0
-
-## bindTo
-
-**Signature**
-
-```ts
-export declare const bindTo: <N>(name: N) => <A>(fa: Task<A>) => Task<{ readonly [K in N]: A }>
-```
-
-Added in v2.8.0
-
-## never
-
-A `Task` that never completes.
-
-**Signature**
-
-```ts
-export declare const never: Task<never>
-```
-
-Added in v2.0.0
+# traversing
 
 ## sequenceArray
+
+Equivalent to `ReadonlyArray#sequence(Applicative)`.
 
 **Signature**
 
@@ -616,6 +573,8 @@ Added in v2.9.0
 
 ## sequenceSeqArray
 
+Equivalent to `ReadonlyArray#sequence(ApplicativeSeq)`.
+
 **Signature**
 
 ```ts
@@ -626,6 +585,8 @@ Added in v2.9.0
 
 ## traverseArray
 
+Equivalent to `ReadonlyArray#traverse(Applicative)`.
+
 **Signature**
 
 ```ts
@@ -635,6 +596,8 @@ export declare const traverseArray: <A, B>(f: (a: A) => Task<B>) => (as: readonl
 Added in v2.9.0
 
 ## traverseArrayWithIndex
+
+Equivalent to `ReadonlyArray#traverseWithIndex(Applicative)`.
 
 **Signature**
 
@@ -704,6 +667,8 @@ Added in v2.11.0
 
 ## traverseSeqArray
 
+Equivalent to `ReadonlyArray#traverse(ApplicativeSeq)`.
+
 **Signature**
 
 ```ts
@@ -714,6 +679,8 @@ Added in v2.9.0
 
 ## traverseSeqArrayWithIndex
 
+Equivalent to `ReadonlyArray#traverseWithIndex(ApplicativeSeq)`.
+
 **Signature**
 
 ```ts
@@ -723,3 +690,185 @@ export declare const traverseSeqArrayWithIndex: <A, B>(
 ```
 
 Added in v2.9.0
+
+# type lambdas
+
+## URI
+
+**Signature**
+
+```ts
+export declare const URI: 'Task'
+```
+
+Added in v2.0.0
+
+## URI (type alias)
+
+**Signature**
+
+```ts
+export type URI = typeof URI
+```
+
+Added in v2.0.0
+
+# utils
+
+## ApT
+
+**Signature**
+
+```ts
+export declare const ApT: Task<readonly []>
+```
+
+Added in v2.11.0
+
+## ap
+
+**Signature**
+
+```ts
+export declare const ap: <A>(fa: Task<A>) => <B>(fab: Task<(a: A) => B>) => Task<B>
+```
+
+Added in v2.0.0
+
+## apFirst
+
+Combine two effectful actions, keeping only the result of the first.
+
+**Signature**
+
+```ts
+export declare const apFirst: <B>(second: Task<B>) => <A>(first: Task<A>) => Task<A>
+```
+
+Added in v2.0.0
+
+## apSecond
+
+Combine two effectful actions, keeping only the result of the second.
+
+**Signature**
+
+```ts
+export declare const apSecond: <B>(second: Task<B>) => <A>(first: Task<A>) => Task<B>
+```
+
+Added in v2.0.0
+
+## delay
+
+Creates a task that will complete after a time delay
+
+**Signature**
+
+```ts
+export declare function delay(millis: number): <A>(ma: Task<A>) => Task<A>
+```
+
+**Example**
+
+```ts
+import { sequenceT } from 'fp-ts/Apply'
+import * as T from 'fp-ts/Task'
+import { takeRight } from 'fp-ts/Array'
+
+async function test() {
+  const log: Array<string> = []
+  const append = (message: string): T.Task<void> =>
+    T.fromIO(() => {
+      log.push(message)
+    })
+  const fa = append('a')
+  const fb = T.delay(20)(append('b'))
+  const fc = T.delay(10)(append('c'))
+  const fd = append('d')
+  await sequenceT(T.ApplyPar)(fa, fb, fc, fd)()
+  assert.deepStrictEqual(takeRight(2)(log), ['c', 'b'])
+}
+
+test()
+```
+
+Added in v2.0.0
+
+## never
+
+A `Task` that never completes.
+
+**Signature**
+
+```ts
+export declare const never: Task<never>
+```
+
+Added in v2.0.0
+
+# zone of death
+
+## ~~fromTask~~
+
+**Signature**
+
+```ts
+export declare const fromTask: <A>(fa: Task<A>) => Task<A>
+```
+
+Added in v2.7.0
+
+## ~~getMonoid~~
+
+Use [`getApplicativeMonoid`](./Applicative.ts.html#getapplicativemonoid) instead.
+
+Lift a monoid into 'Task', the inner values are concatenated using the provided `Monoid`.
+
+**Signature**
+
+```ts
+export declare const getMonoid: <A>(M: Monoid<A>) => Monoid<Task<A>>
+```
+
+Added in v2.0.0
+
+## ~~getSemigroup~~
+
+Use [`getApplySemigroup`](./Apply.ts.html#getapplysemigroup) instead.
+
+**Signature**
+
+```ts
+export declare const getSemigroup: <A>(S: Semigroup<A>) => Semigroup<Task<A>>
+```
+
+Added in v2.0.0
+
+## ~~taskSeq~~
+
+This instance is deprecated, use small, specific instances instead.
+For example if a function needs a `Functor` instance, pass `T.Functor` instead of `T.taskSeq`
+(where `T` is from `import T from 'fp-ts/Task'`)
+
+**Signature**
+
+```ts
+export declare const taskSeq: Monad1<'Task'> & MonadTask1<'Task'>
+```
+
+Added in v2.0.0
+
+## ~~task~~
+
+This instance is deprecated, use small, specific instances instead.
+For example if a function needs a `Functor` instance, pass `T.Functor` instead of `T.task`
+(where `T` is from `import T from 'fp-ts/Task'`)
+
+**Signature**
+
+```ts
+export declare const task: Monad1<'Task'> & MonadTask1<'Task'>
+```
+
+Added in v2.0.0

@@ -1,11 +1,11 @@
-import * as U from './util'
 import * as Eq from '../src/Eq'
 import { identity, pipe } from '../src/function'
-import * as T from '../src/Task'
+import * as N from '../src/number'
 import * as O from '../src/Option'
 import * as S from '../src/string'
+import * as T from '../src/Task'
 import * as _ from '../src/Tree'
-import * as N from '../src/number'
+import * as U from './util'
 
 describe('Tree', () => {
   describe('pipeables', () => {
@@ -41,6 +41,14 @@ describe('Tree', () => {
 
   it('apSecond', () => {
     U.deepStrictEqual(pipe(_.make('a'), _.apSecond(_.make('b'))), _.make('b'))
+  })
+
+  it('flatMap', () => {
+    const f = (n: number) => _.of(n * 2)
+    const fa = _.make(1, [_.make(2), _.make(3)])
+    const expected = _.make(2, [_.make(4), _.make(6)])
+    U.deepStrictEqual(pipe(fa, _.flatMap(f)), expected)
+    U.deepStrictEqual(_.flatMap(fa, f), expected)
   })
 
   it('chain', () => {
@@ -198,9 +206,10 @@ describe('Tree', () => {
       pipe(
         _.of(1),
         _.bindTo('a'),
-        _.bind('b', () => _.of('b'))
+        _.bind('b', () => _.of('b')),
+        _.let('c', ({ a, b }) => [a, b])
       ),
-      _.make({ a: 1, b: 'b' })
+      _.make({ a: 1, b: 'b', c: [1, 'b'] })
     )
   })
 

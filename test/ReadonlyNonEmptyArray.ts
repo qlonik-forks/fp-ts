@@ -1,4 +1,5 @@
 import * as assert from 'assert'
+
 import * as B from '../src/boolean'
 import { Endomorphism } from '../src/Endomorphism'
 import * as Eq from '../src/Eq'
@@ -86,6 +87,12 @@ describe('ReadonlyNonEmptyArray', () => {
     U.deepStrictEqual(pipe(fab, _.ap([1, 2])), [2, 4, 2, 4])
   })
 
+  it('flatMap', () => {
+    const f = (a: number): _.ReadonlyNonEmptyArray<number> => [a, 4]
+    U.deepStrictEqual(pipe([1, 2], _.flatMap(f)), [1, 4, 2, 4])
+    U.deepStrictEqual(_.flatMap([1, 2], f), [1, 4, 2, 4])
+  })
+
   it('chain', () => {
     const f = (a: number): _.ReadonlyNonEmptyArray<number> => [a, 4]
     U.deepStrictEqual(pipe([1, 2], _.chain(f)), [1, 4, 2, 4])
@@ -161,9 +168,7 @@ describe('ReadonlyNonEmptyArray', () => {
   })
 
   it('groupSort', () => {
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.groupSort(N.Ord)([]), [])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.groupSort(N.Ord)([1, 2, 1, 1]), [[1, 1, 1], [2]])
   })
 
@@ -227,17 +232,11 @@ describe('ReadonlyNonEmptyArray', () => {
     const a2 = make(1)
     const a3 = make(2)
     const a4 = make(3)
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(pipe([], _.insertAt(1, 1)), O.none)
-    // tslint:disable-next-line: deprecation
     assert.deepStrictEqual(_.insertAt(0, a4)([a1, a2, a3]), O.some([a4, a1, a2, a3]))
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.insertAt(-1, a4)([a1, a2, a3]), O.none)
-    // tslint:disable-next-line: deprecation
     assert.deepStrictEqual(_.insertAt(3, a4)([a1, a2, a3]), O.some([a1, a2, a3, a4]))
-    // tslint:disable-next-line: deprecation
     assert.deepStrictEqual(_.insertAt(1, a4)([a1, a2, a3]), O.some([a1, a4, a2, a3]))
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.insertAt(4, a4)([a1, a2, a3]), O.none)
   })
 
@@ -298,18 +297,14 @@ describe('ReadonlyNonEmptyArray', () => {
     assert.deepStrictEqual(_.filter(({ x }) => x !== 10)([a1, a2, a3]), O.some([a1, a2, a3]))
 
     // refinements
-    // tslint:disable-next-line: deprecation
     const actual1 = _.filter(O.isSome)([O.some(3), O.some(2), O.some(1)])
     assert.deepStrictEqual(actual1, O.some([O.some(3), O.some(2), O.some(1)]))
-    // tslint:disable-next-line: deprecation
     const actual2 = _.filter(O.isSome)([O.some(3), O.none, O.some(1)])
     assert.deepStrictEqual(actual2, O.some([O.some(3), O.some(1)]))
   })
 
   it('filterWithIndex', () => {
-    // tslint:disable-next-line: deprecation
     assert.deepStrictEqual(_.filterWithIndex((i) => i % 2 === 0)([1, 2, 3]), O.some([1, 3]))
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.filterWithIndex((i, a: number) => i % 2 === 1 && a > 2)([1, 2, 3]), O.none)
   })
 
@@ -344,16 +339,12 @@ describe('ReadonlyNonEmptyArray', () => {
   })
 
   it('cons', () => {
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.cons(1, [2, 3, 4]), [1, 2, 3, 4])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(pipe([2, 3, 4], _.cons(1)), [1, 2, 3, 4])
   })
 
   it('snoc', () => {
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.snoc([], 0), [0])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.snoc([1, 2, 3], 4), [1, 2, 3, 4])
   })
 
@@ -399,7 +390,6 @@ describe('ReadonlyNonEmptyArray', () => {
 
   it('fromArray', () => {
     U.strictEqual(_.fromArray([]), O.none)
-    // tslint:disable-next-line: readonly-array
     const as = [1, 2, 3]
     const bs = _.fromArray(as)
     assert.deepStrictEqual(bs, O.some(as))
@@ -424,9 +414,10 @@ describe('ReadonlyNonEmptyArray', () => {
       pipe(
         _.of(1),
         _.bindTo('a'),
-        _.bind('b', () => _.of('b'))
+        _.bind('b', () => _.of('b')),
+        _.let('c', ({ a, b }) => [a, b])
       ),
-      [{ a: 1, b: 'b' }]
+      [{ a: 1, b: 'b', c: [1, 'b'] }]
     )
   })
 
@@ -705,11 +696,14 @@ describe('ReadonlyNonEmptyArray', () => {
     U.deepStrictEqual(pipe(['a'], _.concat(['b'])), ['a', 'b'])
     U.deepStrictEqual(pipe(_.empty, _.concat(['b'])), ['b'])
     U.deepStrictEqual(pipe(['a'], _.concat<string>(_.empty)), ['a'])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.concat(['a'], ['b']), ['a', 'b'])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.concat(['a'], _.empty), ['a'])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.concat(_.empty, ['b']), ['b'])
+  })
+
+  it('isOutOfBound', () => {
+    U.deepStrictEqual(_.isOutOfBound(0, ['a']), false)
+    U.deepStrictEqual(_.isOutOfBound(100, ['a']), true)
+    U.deepStrictEqual(_.isOutOfBound(-1, ['a']), true)
   })
 })

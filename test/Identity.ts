@@ -1,10 +1,10 @@
-import * as U from './util'
 import { left, right } from '../src/Either'
-import * as N from '../src/number'
 import { identity, pipe } from '../src/function'
 import * as _ from '../src/Identity'
+import * as N from '../src/number'
 import * as O from '../src/Option'
 import * as S from '../src/string'
+import * as U from './util'
 
 describe('Identity', () => {
   describe('pipeables', () => {
@@ -25,9 +25,20 @@ describe('Identity', () => {
       U.deepStrictEqual(pipe('a', _.apSecond('b')), 'b')
     })
 
+    it('flatMap', () => {
+      const f = (n: number) => n * 2
+      U.deepStrictEqual(pipe(1, _.flatMap(f)), 2)
+      U.deepStrictEqual(_.flatMap(1, f), 2)
+    })
+
     it('chain', () => {
       const f = (n: number) => n * 2
       U.deepStrictEqual(pipe(1, _.chain(f)), 2)
+    })
+
+    it('tap', () => {
+      const f = (n: number) => n * 2
+      U.deepStrictEqual(pipe(1, _.tap(f)), 1)
     })
 
     it('chainFirst', () => {
@@ -123,9 +134,10 @@ describe('Identity', () => {
       pipe(
         _.of(1),
         _.bindTo('a'),
-        _.bind('b', () => _.of('b'))
+        _.bind('b', () => _.of('b')),
+        _.let('c', ({ a, b }) => [a, b])
       ),
-      { a: 1, b: 'b' }
+      { a: 1, b: 'b', c: [1, 'b'] }
     )
   })
 

@@ -1,4 +1,9 @@
 /**
+ * The state monad transformer. It can be used to add state to other monads.
+ *
+ * The `of` function leaves the state unchanged, while `chain` uses the final state of the first computation
+ * as the initial state of the second.
+ *
  * @since 2.0.0
  */
 import { Chain, Chain1, Chain2, Chain2C, Chain3, Chain3C } from './Chain'
@@ -129,7 +134,21 @@ export function chain<M>(
 export function chain<M>(
   M: Chain<M>
 ): <A, S, B>(f: (a: A) => StateT<M, S, B>) => (ma: StateT<M, S, A>) => StateT<M, S, B> {
-  return (f) => (ma) => (s) => M.chain(ma(s), ([a, s1]) => f(a)(s1))
+  const flatMapM = flatMap(M)
+  return (f) => (ma) => flatMapM(ma, f)
+}
+
+/** @internal */
+export function flatMap<M extends URIS3>(
+  M: Chain3<M>
+): <S, R, E, A, B>(ma: StateT3<M, S, R, E, A>, f: (a: A) => StateT3<M, S, R, E, B>) => StateT<M, S, B>
+/** @internal */
+export function flatMap<M>(M: Chain<M>): <S, A, B>(ma: StateT<M, S, A>, f: (a: A) => StateT<M, S, B>) => StateT<M, S, B>
+/** @internal */
+export function flatMap<M>(
+  M: Chain<M>
+): <S, A, B>(ma: StateT<M, S, A>, f: (a: A) => StateT<M, S, B>) => StateT<M, S, B> {
+  return (ma, f) => (s) => M.chain(ma(s), ([a, s1]) => f(a)(s1))
 }
 
 /**
@@ -204,9 +223,8 @@ export function execute<F>(F: Functor<F>): <S>(s: S) => <A>(ma: StateT<F, S, A>)
 // deprecated
 // -------------------------------------------------------------------------------------
 
-// tslint:disable: deprecation
-
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -226,6 +244,7 @@ export interface StateM<M> {
 }
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -245,6 +264,7 @@ export interface StateM1<M extends URIS> {
 }
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -264,6 +284,7 @@ export interface StateM2<M extends URIS2> {
 }
 
 /**
+ * @category zone of death
  * @since 2.5.4
  * @deprecated
  */
@@ -283,6 +304,7 @@ export interface StateM2C<M extends URIS2, E> {
 }
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -308,6 +330,7 @@ export interface StateM3<M extends URIS3> {
 }
 
 /**
+ * @category zone of death
  * @since 2.5.4
  * @deprecated
  */
@@ -330,6 +353,7 @@ export interface StateM3C<M extends URIS3, E> {
 }
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */

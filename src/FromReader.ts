@@ -3,15 +3,9 @@
  *
  * @since 2.11.0
  */
-import { Chain, Chain2, Chain3, Chain3C, Chain4, chainFirst } from './Chain'
+import { Chain, Chain2, Chain3, Chain3C, Chain4, tap } from './Chain'
 import { flow } from './function'
 import { HKT2, Kind2, Kind3, Kind4, URIS2, URIS3, URIS4 } from './HKT'
-import {
-  NaturalTransformation22,
-  NaturalTransformation23R,
-  NaturalTransformation23RC,
-  NaturalTransformation24R
-} from './NaturalTransformation'
 import * as R from './Reader'
 
 import Reader = R.Reader
@@ -21,7 +15,7 @@ import Reader = R.Reader
 // -------------------------------------------------------------------------------------
 
 /**
- * @category type classes
+ * @category model
  * @since 2.11.0
  */
 export interface FromReader<F> {
@@ -30,40 +24,40 @@ export interface FromReader<F> {
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.11.0
  */
 export interface FromReader2<F extends URIS2> {
   readonly URI: F
-  readonly fromReader: NaturalTransformation22<R.URI, F>
+  readonly fromReader: <E, A>(fa: Reader<E, A>) => Kind2<F, E, A>
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.11.0
  */
 export interface FromReader3<F extends URIS3> {
   readonly URI: F
-  readonly fromReader: NaturalTransformation23R<R.URI, F>
+  readonly fromReader: <R, A, E>(fa: Reader<R, A>) => Kind3<F, R, E, A>
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.11.0
  */
 export interface FromReader3C<F extends URIS3, E> {
   readonly URI: F
   readonly _E: E
-  readonly fromReader: NaturalTransformation23RC<R.URI, F, E>
+  readonly fromReader: <R, A>(fa: Reader<R, A>) => Kind3<F, R, E, A>
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.11.0
  */
 export interface FromReader4<F extends URIS4> {
   readonly URI: F
-  readonly fromReader: NaturalTransformation24R<R.URI, F>
+  readonly fromReader: <R, A, S, E>(fa: Reader<R, A>) => Kind4<F, S, R, E, A>
 }
 
 // -------------------------------------------------------------------------------------
@@ -101,7 +95,6 @@ export function asks<F>(F: FromReader<F>): <R, A>(f: (r: R) => A) => HKT2<F, R, 
 // -------------------------------------------------------------------------------------
 
 /**
- * @category combinators
  * @since 2.11.0
  */
 export function fromReaderK<F extends URIS4>(
@@ -126,7 +119,6 @@ export function fromReaderK<F>(
 }
 
 /**
- * @category combinators
  * @since 2.11.0
  */
 export function chainReaderK<M extends URIS4>(
@@ -158,7 +150,6 @@ export function chainReaderK<M extends URIS2>(
 }
 
 /**
- * @category combinators
  * @since 2.11.0
  */
 export function chainFirstReaderK<M extends URIS4>(
@@ -185,5 +176,39 @@ export function chainFirstReaderK<M extends URIS2>(
   F: FromReader2<M>,
   M: Chain2<M>
 ): <A, R, B>(f: (a: A) => Reader<R, B>) => (ma: Kind2<M, R, A>) => Kind2<M, R, A> {
-  return flow(fromReaderK(F), chainFirst(M))
+  const tapM = tapReader(F, M)
+  return (f) => (self) => tapM(self, f)
+}
+
+/** @internal */
+export function tapReader<M extends URIS4>(
+  F: FromReader4<M>,
+  M: Chain4<M>
+): <A, S, R, E, B>(self: Kind4<M, S, R, E, A>, f: (a: A) => Reader<R, B>) => Kind4<M, S, R, E, A>
+/** @internal */
+export function tapReader<M extends URIS3>(
+  F: FromReader3<M>,
+  M: Chain3<M>
+): <A, R, E, B>(self: Kind3<M, R, E, A>, f: (a: A) => Reader<R, B>) => Kind3<M, R, E, A>
+/** @internal */
+export function tapReader<M extends URIS3, E>(
+  F: FromReader3C<M, E>,
+  M: Chain3C<M, E>
+): <A, R, E, B>(self: Kind3<M, R, E, A>, f: (a: A) => Reader<R, B>) => Kind3<M, R, E, A>
+/** @internal */
+export function tapReader<M extends URIS2>(
+  F: FromReader2<M>,
+  M: Chain2<M>
+): <A, R, E, B>(self: Kind2<M, E, A>, f: (a: A) => Reader<R, B>) => Kind2<M, E, A>
+export function tapReader<M extends URIS2>(
+  F: FromReader<M>,
+  M: Chain<M>
+): <A, R, B>(self: HKT2<M, R, A>, f: (a: A) => Reader<R, B>) => HKT2<M, R, A>
+/** @internal */
+export function tapReader<M extends URIS2>(
+  F: FromReader2<M>,
+  M: Chain2<M>
+): <A, R, B>(self: Kind2<M, R, A>, f: (a: A) => Reader<R, B>) => Kind2<M, R, A> {
+  const tapM = tap(M)
+  return (self, f) => tapM(self, flow(f, F.fromReader))
 }

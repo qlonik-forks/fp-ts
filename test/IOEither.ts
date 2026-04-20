@@ -1,16 +1,16 @@
-import * as U from './util'
 import { sequenceT } from '../src/Apply'
 import * as E from '../src/Either'
 import { constVoid, identity, pipe, SK } from '../src/function'
 import * as I from '../src/IO'
 import * as _ from '../src/IOEither'
+import * as N from '../src/number'
 import * as O from '../src/Option'
 import { pipeable } from '../src/pipeable'
 import * as RA from '../src/ReadonlyArray'
-import * as N from '../src/number'
-import * as S from '../src/string'
-import { left, right } from '../src/Separated'
 import { ReadonlyNonEmptyArray } from '../src/ReadonlyNonEmptyArray'
+import { left, right } from '../src/Separated'
+import * as S from '../src/string'
+import * as U from './util'
 
 describe('IOEither', () => {
   describe('pipeables', () => {
@@ -59,7 +59,6 @@ describe('IOEither', () => {
     })
 
     it('ApplicativePar', () => {
-      // tslint:disable-next-line: readonly-array
       const log: Array<string> = []
       const x = sequenceT(_.ApplicativePar)(
         _.rightIO<string, number>(() => log.push('a')),
@@ -74,7 +73,6 @@ describe('IOEither', () => {
     })
 
     it('ApplicativeSeq', () => {
-      // tslint:disable-next-line: readonly-array
       const log: Array<string> = []
       const x = sequenceT(_.ApplicativeSeq)(
         _.rightIO<string, number>(() => log.push('a')),
@@ -108,10 +106,26 @@ describe('IOEither', () => {
       U.deepStrictEqual(pipe(fa, _.apSecondW(fb))(), E.right(1))
     })
 
+    it('flatMap', () => {
+      const f = (a: string) => (a.length > 2 ? _.right(a.length) : _.left('foo'))
+      U.deepStrictEqual(pipe(_.right('foo'), _.flatMap(f))(), E.right(3))
+      U.deepStrictEqual(_.flatMap(_.right('foo'), f)(), E.right(3))
+      U.deepStrictEqual(pipe(_.right('a'), _.flatMap(f))(), E.left('foo'))
+      U.deepStrictEqual(_.flatMap(_.right('a'), f)(), E.left('foo'))
+    })
+
     it('chain', () => {
       const f = (a: string) => (a.length > 2 ? _.right(a.length) : _.left('foo'))
       U.deepStrictEqual(pipe(_.right('foo'), _.chain(f))(), E.right(3))
       U.deepStrictEqual(pipe(_.right('a'), _.chain(f))(), E.left('foo'))
+    })
+
+    it('tap', () => {
+      const f = (a: string) => (a.length > 2 ? _.right(a.length) : _.left('foo'))
+      U.deepStrictEqual(pipe(_.right('foo'), _.tap(f))(), E.right('foo'))
+      U.deepStrictEqual(pipe(_.right('a'), _.tap(f))(), E.left('foo'))
+      U.deepStrictEqual(_.tap(_.right('foo'), f)(), E.right('foo'))
+      U.deepStrictEqual(_.tap(_.right('a'), f)(), E.left('foo'))
     })
 
     it('chainFirst', () => {
@@ -208,8 +222,25 @@ describe('IOEither', () => {
       U.deepStrictEqual(f(-1)(), E.left('a'))
     })
 
+    it('flatMapOption', () => {
+      const f = _.flatMapOption(
+        (n: number) => (n > 0 ? O.some(n) : O.none),
+        () => 'a'
+      )
+      U.deepStrictEqual(f(_.right(1))(), E.right(1))
+      U.deepStrictEqual(f(_.right(-1))(), E.left('a'))
+      U.deepStrictEqual(f(_.left('b'))(), E.left('b'))
+    })
+
     it('chainOptionK', () => {
       const f = _.chainOptionK(() => 'a')((n: number) => (n > 0 ? O.some(n) : O.none))
+      U.deepStrictEqual(f(_.right(1))(), E.right(1))
+      U.deepStrictEqual(f(_.right(-1))(), E.left('a'))
+      U.deepStrictEqual(f(_.left('b'))(), E.left('b'))
+    })
+
+    it('flatMapEither', () => {
+      const f = _.flatMapEither((n: number) => (n > 0 ? E.right(n) : E.left('a')))
       U.deepStrictEqual(f(_.right(1))(), E.right(1))
       U.deepStrictEqual(f(_.right(-1))(), E.left('a'))
       U.deepStrictEqual(f(_.left('b'))(), E.left('b'))
@@ -272,6 +303,16 @@ describe('IOEither', () => {
     U.deepStrictEqual(_.orElseW(() => _.right(2))(_.right(1))(), E.right(1))
   })
 
+  it('tapError', () => {
+    const f = (e: string) => (e.length <= 1 ? _.right(true) : _.left(e + '!'))
+    U.deepStrictEqual(pipe(_.right(1), _.tapError(f))(), E.right(1))
+    U.deepStrictEqual(pipe(_.left('a'), _.tapError(f))(), E.left('a'))
+    U.deepStrictEqual(pipe(_.left('aa'), _.tapError(f))(), E.left('aa!'))
+    U.deepStrictEqual(_.tapError(_.right(1), f)(), E.right(1))
+    U.deepStrictEqual(_.tapError(_.left('a'), f)(), E.left('a'))
+    U.deepStrictEqual(_.tapError(_.left('aa'), f)(), E.left('aa!'))
+  })
+
   it('orElseFirst', () => {
     const f = _.orElseFirst((e: string) => (e.length <= 1 ? _.right(true) : _.left(e + '!')))
     U.deepStrictEqual(pipe(_.right(1), f)(), E.right(1))
@@ -310,7 +351,6 @@ describe('IOEither', () => {
 
   describe('getSemigroup', () => {
     it('concat', () => {
-      // tslint:disable-next-line: deprecation
       const S = _.getSemigroup<string, number>(N.SemigroupSum)
       U.deepStrictEqual(S.concat(_.leftIO(I.of('a')), _.leftIO(I.of('b')))(), E.left('a'))
       U.deepStrictEqual(S.concat(_.leftIO(I.of('a')), _.rightIO(I.of(2)))(), E.right(2))
@@ -321,7 +361,6 @@ describe('IOEither', () => {
 
   describe('getApplyMonoid', () => {
     it('concat', () => {
-      // tslint:disable-next-line: deprecation
       const M = _.getApplyMonoid(S.Monoid)
       U.deepStrictEqual(M.concat(_.rightIO(I.of('a')), _.rightIO(I.of('b')))(), E.right('ab'))
       U.deepStrictEqual(M.concat(_.rightIO(I.of('a')), _.leftIO(I.of('b')))(), E.left('b'))
@@ -331,7 +370,6 @@ describe('IOEither', () => {
   })
 
   describe('bracket', () => {
-    // tslint:disable-next-line: readonly-array
     let log: Array<string> = []
 
     const acquireFailure = _.left('acquire failure')
@@ -397,7 +435,6 @@ describe('IOEither', () => {
     const A = _.getApplicativeIOValidation(S.Monoid)
     U.deepStrictEqual(sequenceT(A)(_.left('a'), _.left('b'))(), E.left('ab'))
     U.deepStrictEqual(sequenceT(A)(_.left('a'), _.right(1))(), E.left('a'))
-    // tslint:disable-next-line: deprecation
     const AV = _.getIOValidation(S.Monoid)
     U.deepStrictEqual(sequenceT(AV)(_.left('a'), _.left('b'))(), E.left('ab'))
   })
@@ -405,7 +442,6 @@ describe('IOEither', () => {
   it('getAltIOValidation', () => {
     const A = _.getAltIOValidation(S.Monoid)
     U.deepStrictEqual(A.alt(_.left('a'), () => _.left('b'))(), E.left('ab'))
-    // tslint:disable-next-line: deprecation
     const AV = _.getIOValidation(S.Monoid)
     U.deepStrictEqual(AV.alt(_.left('a'), () => _.left('b'))(), E.left('ab'))
   })
@@ -432,7 +468,6 @@ describe('IOEither', () => {
 
   describe('getFilterable', () => {
     const F_ = _.getFilterable(RA.getMonoid<string>())
-    // tslint:disable-next-line: deprecation
     const { filter, filterMap, partition, partitionMap } = pipeable(F_)
 
     it('filter', async () => {
@@ -501,9 +536,10 @@ describe('IOEither', () => {
       pipe(
         _.right<string, number>(1),
         _.bindTo('a'),
-        _.bind('b', () => _.right('b'))
+        _.bind('b', () => _.right('b')),
+        _.let('c', ({ a, b }) => [a, b])
       )(),
-      E.right({ a: 1, b: 'b' })
+      E.right({ a: 1, b: 'b', c: [1, 'b'] })
     )
   })
 
@@ -566,7 +602,6 @@ describe('IOEither', () => {
 
     // old
     it('sequenceArray', () => {
-      // tslint:disable-next-line: readonly-array
       const log: Array<number | string> = []
       const right = (n: number): _.IOEither<string, number> =>
         _.rightIO(() => {
@@ -578,17 +613,13 @@ describe('IOEither', () => {
           log.push(s)
           return s
         })
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(pipe([right(1), right(2)], _.sequenceArray)(), E.right([1, 2]))
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(pipe([right(3), left('a')], _.sequenceArray)(), E.left('a'))
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(pipe([left('b'), right(4)], _.sequenceArray)(), E.left('b'))
       U.deepStrictEqual(log, [1, 2, 3, 'a', 'b', 4])
     })
 
     it('sequenceSeqArray', () => {
-      // tslint:disable-next-line: readonly-array
       const log: Array<number | string> = []
       const right = (n: number): _.IOEither<string, number> =>
         _.rightIO(() => {
@@ -600,11 +631,8 @@ describe('IOEither', () => {
           log.push(s)
           return s
         })
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(pipe([right(1), right(2)], _.sequenceSeqArray)(), E.right([1, 2]))
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(pipe([right(3), left('a')], _.sequenceSeqArray)(), E.left('a'))
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(pipe([left('b'), right(4)], _.sequenceSeqArray)(), E.left('b'))
       U.deepStrictEqual(log, [1, 2, 3, 'a', 'b'])
     })
@@ -649,10 +677,46 @@ describe('IOEither', () => {
     U.deepStrictEqual(f(_.left(1))(), 'left')
   })
 
+  it('tapEither', async () => {
+    const f = (s: string) => E.right(s.length)
+    U.deepStrictEqual(pipe(_.right('a'), _.tapEither(f))(), E.right('a'))
+    const g = (s: string) => E.left(s.length)
+    U.deepStrictEqual(pipe(_.right('a'), _.tapEither(g))(), E.left(1))
+  })
+
   it('chainFirstEitherK', async () => {
     const f = (s: string) => E.right(s.length)
     U.deepStrictEqual(pipe(_.right('a'), _.chainFirstEitherK(f))(), E.right('a'))
     const g = (s: string) => E.left(s.length)
     U.deepStrictEqual(pipe(_.right('a'), _.chainFirstEitherK(g))(), E.left(1))
+  })
+
+  it('tapIO', () => {
+    const ref: Array<number> = []
+    const add = (value: number) => () => ref.push(value)
+
+    U.deepStrictEqual(pipe(_.of(1), _.tapIO(add))(), E.of(1))
+    U.deepStrictEqual(pipe(_.left('error'), _.tapIO(add))(), E.left('error'))
+    U.deepStrictEqual(ref, [1])
+  })
+
+  it('as', () => {
+    U.deepStrictEqual(pipe(_.right('a'), _.as('b'))(), E.right('b'))
+    U.deepStrictEqual(_.as(_.of('a'), 'b')(), E.right('b'))
+    U.deepStrictEqual(_.as(_.left('error'), 'b')(), E.left('error'))
+  })
+
+  it('asUnit', () => {
+    U.deepStrictEqual(pipe(_.of('a'), _.asUnit)(), E.of(undefined))
+  })
+
+  it('flatMapIO', () => {
+    U.deepStrictEqual(
+      pipe(
+        _.of(1),
+        _.flatMapIO(() => I.of(2))
+      )(),
+      E.of(2)
+    )
   })
 })

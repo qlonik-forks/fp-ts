@@ -1,8 +1,8 @@
 /**
  * @since 2.0.0
  */
-import { IO, map } from './IO'
 import { pipe } from './function'
+import { IO, map } from './IO'
 import { ReadonlyNonEmptyArray } from './ReadonlyNonEmptyArray'
 
 /**
@@ -45,12 +45,10 @@ export function randomRange(min: number, max: number): IO<number> {
  *
  * @since 2.0.0
  */
-export const randomBool: IO<boolean> =
-  /*#__PURE__*/
-  pipe(
-    random,
-    map((n) => n < 0.5)
-  )
+export const randomBool: IO<boolean> = /*#__PURE__*/ pipe(
+  random,
+  map((n) => n < 0.5)
+)
 
 /**
  * Returns a random element of a `ReadonlyNonEmptyArray`.

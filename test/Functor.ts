@@ -1,11 +1,10 @@
-import * as U from './util'
-import * as RA from '../src/ReadonlyArray'
 import { getFunctorComposition } from '../src/Functor'
 import * as option from '../src/Option'
+import * as RA from '../src/ReadonlyArray'
+import * as U from './util'
 
 describe('Functor', () => {
   it('getFunctorComposition', () => {
-    // tslint:disable-next-line: deprecation
     const arrayOption = getFunctorComposition(RA.Functor, option.Functor)
     U.deepStrictEqual(arrayOption.map([option.some(1)], U.double), [option.some(2)])
   })

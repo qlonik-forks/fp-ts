@@ -1,12 +1,11 @@
-import * as U from './util'
+import * as E from '../src/Either'
+import * as IO from '../src/IO'
 import { semigroupString } from '../src/Semigroup'
 import * as _ from '../src/ValidationT'
-import * as IO from '../src/IO'
-import * as E from '../src/Either'
+import * as U from './util'
 
 describe('ValidationT', () => {
   describe('getValidationM', () => {
-    // tslint:disable-next-line: deprecation
     const VT = _.getValidationM(semigroupString, IO.Monad)
 
     it('chain', () => {

@@ -1,11 +1,15 @@
 /**
+ * The error monad transformer. It can be used to add error handling to other monads.
+ *
+ * The `of` function yields a successful computation, while `chain` sequences two subcomputations, failing on the first error.
+ *
  * @since 2.0.0
  */
 import { ApplicativeComposition12, ApplicativeComposition22, ApplicativeCompositionHKT2 } from './Applicative'
 import { ap as ap_, Apply, Apply1, Apply2, Apply2C, Apply3, Apply3C } from './Apply'
 import { Chain, Chain1, Chain2, Chain2C, Chain3, Chain3C } from './Chain'
 import * as E from './Either'
-import { flow, Lazy, pipe } from './function'
+import { flow, LazyArg, pipe } from './function'
 import { Functor, Functor1, Functor2, Functor2C, Functor3, Functor3C, map as map_ } from './Functor'
 import { HKT, Kind, Kind2, Kind3, URIS, URIS2, URIS3 } from './HKT'
 import { Monad, Monad1, Monad2, Monad2C, Monad3, Monad3C } from './Monad'
@@ -224,10 +228,6 @@ export function chainNullableK<M>(
   }
 }
 
-// -------------------------------------------------------------------------------------
-// type class members
-// -------------------------------------------------------------------------------------
-
 /**
  * @since 2.10.0
  */
@@ -316,7 +316,27 @@ export function chain<M>(
 export function chain<M>(
   M: Monad<M>
 ): <A, E, B>(f: (a: A) => HKT<M, Either<E, B>>) => (ma: HKT<M, Either<E, A>>) => HKT<M, Either<E, B>> {
-  return (f) => (ma) => M.chain(ma, (e) => (E.isLeft(e) ? M.of(e) : f(e.right)))
+  const flatMapM = flatMap(M)
+  return (f) => (ma) => flatMapM(ma, f)
+}
+
+/** @internal */
+export function flatMap<M extends URIS2>(
+  M: Monad2<M>
+): <ME, E, A, B>(ma: Kind2<M, ME, Either<E, A>>, f: (a: A) => Kind2<M, ME, Either<E, B>>) => Kind2<M, ME, Either<E, B>>
+/** @internal */
+export function flatMap<M extends URIS>(
+  M: Monad1<M>
+): <E, A, B>(ma: Kind<M, Either<E, A>>, f: (a: A) => Kind<M, Either<E, B>>) => Kind<M, Either<E, B>>
+/** @internal */
+export function flatMap<M>(
+  M: Monad<M>
+): <E, A, B>(ma: HKT<M, Either<E, A>>, f: (a: A) => HKT<M, Either<E, B>>) => HKT<M, Either<E, B>>
+/** @internal */
+export function flatMap<M>(
+  M: Monad<M>
+): <E, A, B>(ma: HKT<M, Either<E, A>>, f: (a: A) => HKT<M, Either<E, B>>) => HKT<M, Either<E, B>> {
+  return (ma, f) => M.chain(ma, (e) => (E.isLeft(e) ? M.of(e) : f(e.right)))
 }
 
 /**
@@ -325,30 +345,32 @@ export function chain<M>(
 export function alt<M extends URIS3>(
   M: Monad3<M>
 ): <R, ME, E, A>(
-  second: Lazy<Kind3<M, R, ME, Either<E, A>>>
+  second: LazyArg<Kind3<M, R, ME, Either<E, A>>>
 ) => (first: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
 export function alt<M extends URIS3, ME>(
   M: Monad3C<M, ME>
 ): <R, E, A>(
-  second: Lazy<Kind3<M, R, ME, Either<E, A>>>
+  second: LazyArg<Kind3<M, R, ME, Either<E, A>>>
 ) => (first: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
 export function alt<M extends URIS2>(
   M: Monad2<M>
 ): <ME, E, A>(
-  second: Lazy<Kind2<M, ME, Either<E, A>>>
+  second: LazyArg<Kind2<M, ME, Either<E, A>>>
 ) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
 export function alt<M extends URIS2, ME>(
   M: Monad2C<M, ME>
-): <E, A>(second: Lazy<Kind2<M, ME, Either<E, A>>>) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
+): <E, A>(
+  second: LazyArg<Kind2<M, ME, Either<E, A>>>
+) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
 export function alt<M extends URIS>(
   M: Monad1<M>
-): <E, A>(second: Lazy<Kind<M, Either<E, A>>>) => (first: Kind<M, Either<E, A>>) => Kind<M, Either<E, A>>
+): <E, A>(second: LazyArg<Kind<M, Either<E, A>>>) => (first: Kind<M, Either<E, A>>) => Kind<M, Either<E, A>>
 export function alt<M>(
   M: Monad<M>
-): <E, A>(second: Lazy<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>>
+): <E, A>(second: LazyArg<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>>
 export function alt<M>(
   M: Monad<M>
-): <E, A>(second: Lazy<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>> {
+): <E, A>(second: LazyArg<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>> {
   return (second) => (first) => M.chain(first, (e) => (E.isLeft(e) ? second() : M.of(e)))
 }
 
@@ -360,29 +382,49 @@ export function bimap<F extends URIS3>(
 ): <E, G, A, B>(
   f: (e: E) => G,
   g: (a: A) => B
-) => <R, FE>(fea: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, B>>
+) => <R, FE>(self: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, B>>
 export function bimap<F extends URIS3, FE>(
   F: Functor3C<F, FE>
 ): <E, G, A, B>(
   f: (e: E) => G,
   g: (a: A) => B
-) => <R>(fea: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, B>>
+) => <R>(self: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, B>>
 export function bimap<F extends URIS2>(
   F: Functor2<F>
-): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => <FE>(fea: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, B>>
+): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => <FE>(self: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, B>>
 export function bimap<F extends URIS2, FE>(
   F: Functor2C<F, FE>
-): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (fea: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, B>>
+): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (self: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, B>>
 export function bimap<F extends URIS>(
   F: Functor1<F>
-): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (fea: Kind<F, Either<E, A>>) => Kind<F, Either<G, B>>
+): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (self: Kind<F, Either<E, A>>) => Kind<F, Either<G, B>>
 export function bimap<F>(
   F: Functor<F>
-): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (fea: HKT<F, Either<E, A>>) => HKT<F, Either<G, B>>
+): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (self: HKT<F, Either<E, A>>) => HKT<F, Either<G, B>>
 export function bimap<F>(
   F: Functor<F>
-): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (fea: HKT<F, Either<E, A>>) => HKT<F, Either<G, B>> {
-  return (f, g) => (fea) => F.map(fea, E.bimap(f, g))
+): <E, G, A, B>(f: (e: E) => G, g: (a: A) => B) => (self: HKT<F, Either<E, A>>) => HKT<F, Either<G, B>> {
+  const mapBothF = mapBoth(F)
+  return (f, g) => (self) => mapBothF(self, f, g)
+}
+
+/** @internal */
+export function mapBoth<F extends URIS2>(
+  F: Functor2<F>
+): <R, E, A, G, B>(self: Kind2<F, R, Either<E, A>>, f: (e: E) => G, g: (a: A) => B) => Kind2<F, R, Either<G, B>>
+/** @internal */
+export function mapBoth<F extends URIS>(
+  F: Functor1<F>
+): <E, A, G, B>(self: Kind<F, Either<E, A>>, f: (e: E) => G, g: (a: A) => B) => Kind<F, Either<G, B>>
+/** @internal */
+export function mapBoth<F>(
+  F: Functor<F>
+): <E, A, G, B>(self: HKT<F, Either<E, A>>, f: (e: E) => G, g: (a: A) => B) => HKT<F, Either<G, B>>
+/** @internal */
+export function mapBoth<F>(
+  F: Functor<F>
+): <E, A, G, B>(self: HKT<F, Either<E, A>>, f: (e: E) => G, g: (a: A) => B) => HKT<F, Either<G, B>> {
+  return (self, f, g) => F.map(self, E.bimap(f, g))
 }
 
 /**
@@ -390,65 +432,86 @@ export function bimap<F>(
  */
 export function mapLeft<F extends URIS3>(
   F: Functor3<F>
-): <E, G>(f: (e: E) => G) => <R, FE, A>(fea: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <R, FE, A>(self: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, A>>
 export function mapLeft<F extends URIS3, FE>(
   F: Functor3C<F, FE>
-): <E, G>(f: (e: E) => G) => <R, A>(fea: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <R, A>(self: Kind3<F, R, FE, Either<E, A>>) => Kind3<F, R, FE, Either<G, A>>
 export function mapLeft<F extends URIS2>(
   F: Functor2<F>
-): <E, G>(f: (e: E) => G) => <FE, A>(fea: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <FE, A>(self: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, A>>
 export function mapLeft<F extends URIS2, FE>(
   F: Functor2C<F, FE>
-): <E, G>(f: (e: E) => G) => <A>(fea: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <A>(self: Kind2<F, FE, Either<E, A>>) => Kind2<F, FE, Either<G, A>>
 export function mapLeft<F extends URIS>(
   F: Functor1<F>
-): <E, G>(f: (e: E) => G) => <A>(fea: Kind<F, Either<E, A>>) => Kind<F, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <A>(self: Kind<F, Either<E, A>>) => Kind<F, Either<G, A>>
 export function mapLeft<F>(
   F: Functor<F>
-): <E, G>(f: (e: E) => G) => <A>(fea: HKT<F, Either<E, A>>) => HKT<F, Either<G, A>>
+): <E, G>(f: (e: E) => G) => <A>(self: HKT<F, Either<E, A>>) => HKT<F, Either<G, A>>
 export function mapLeft<F>(
   F: Functor<F>
-): <E, G>(f: (e: E) => G) => <A>(fea: HKT<F, Either<E, A>>) => HKT<F, Either<G, A>> {
-  return (f) => (fea) => F.map(fea, E.mapLeft(f))
+): <E, G>(f: (e: E) => G) => <A>(self: HKT<F, Either<E, A>>) => HKT<F, Either<G, A>> {
+  const mapErrorF = mapError(F)
+  return (f) => (self) => mapErrorF(self, f)
+}
+
+/** @internal */
+export function mapError<F extends URIS2>(
+  F: Functor2<F>
+): <R, E, A, G>(self: Kind2<F, R, Either<E, A>>, f: (e: E) => G) => Kind2<F, R, Either<G, A>>
+/** @internal */
+export function mapError<F extends URIS>(
+  F: Functor1<F>
+): <E, A, G>(self: Kind<F, Either<E, A>>, f: (e: E) => G) => Kind<F, Either<G, A>>
+/** @internal */
+export function mapError<F>(
+  F: Functor<F>
+): <E, A, G>(self: HKT<F, Either<E, A>>, f: (e: E) => G) => HKT<F, Either<G, A>>
+/** @internal */
+export function mapError<F>(
+  F: Functor<F>
+): <E, A, G>(self: HKT<F, Either<E, A>>, f: (e: E) => G) => HKT<F, Either<G, A>> {
+  return (self, f) => F.map(self, E.mapLeft(f))
 }
 
 /**
+ * @category error handling
  * @since 2.10.0
  */
 export function altValidation<M extends URIS3, E>(
   M: Monad3<M>,
   S: Semigroup<E>
 ): <R, ME, A>(
-  second: Lazy<Kind3<M, R, ME, Either<E, A>>>
+  second: LazyArg<Kind3<M, R, ME, Either<E, A>>>
 ) => (first: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
 export function altValidation<M extends URIS3, ME, E>(
   M: Monad3C<M, ME>,
   S: Semigroup<E>
 ): <R, A>(
-  second: Lazy<Kind3<M, R, ME, Either<E, A>>>
+  second: LazyArg<Kind3<M, R, ME, Either<E, A>>>
 ) => (first: Kind3<M, R, ME, Either<E, A>>) => Kind3<M, R, ME, Either<E, A>>
 export function altValidation<M extends URIS2, E>(
   M: Monad2<M>,
   S: Semigroup<E>
 ): <ME, A>(
-  second: Lazy<Kind2<M, ME, Either<E, A>>>
+  second: LazyArg<Kind2<M, ME, Either<E, A>>>
 ) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
 export function altValidation<M extends URIS2, ME, E>(
   M: Monad2C<M, ME>,
   S: Semigroup<E>
-): <A>(second: Lazy<Kind2<M, ME, Either<E, A>>>) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
+): <A>(second: LazyArg<Kind2<M, ME, Either<E, A>>>) => (first: Kind2<M, ME, Either<E, A>>) => Kind2<M, ME, Either<E, A>>
 export function altValidation<M extends URIS, E>(
   M: Monad1<M>,
   S: Semigroup<E>
-): <A>(second: Lazy<Kind<M, Either<E, A>>>) => (first: Kind<M, Either<E, A>>) => Kind<M, Either<E, A>>
+): <A>(second: LazyArg<Kind<M, Either<E, A>>>) => (first: Kind<M, Either<E, A>>) => Kind<M, Either<E, A>>
 export function altValidation<M, E>(
   M: Monad<M>,
   S: Semigroup<E>
-): <A>(second: Lazy<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>>
+): <A>(second: LazyArg<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>>
 export function altValidation<M, E>(
   M: Monad<M>,
   S: Semigroup<E>
-): <A>(second: Lazy<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>> {
+): <A>(second: LazyArg<HKT<M, Either<E, A>>>) => (first: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>> {
   return (second) => (first) =>
     M.chain(
       first,
@@ -463,11 +526,8 @@ export function altValidation<M, E>(
     )
 }
 
-// -------------------------------------------------------------------------------------
-// destructors
-// -------------------------------------------------------------------------------------
-
 /**
+ * @category pattern matching
  * @since 2.11.0
  */
 export function match<F extends URIS3>(
@@ -603,6 +663,7 @@ export function orElse<M>(
 }
 
 /**
+ * @category error handling
  * @since 2.11.0
  */
 export function orElseFirst<M extends URIS3>(
@@ -634,11 +695,36 @@ export function orElseFirst<M>(
 export function orElseFirst<M>(
   M: Monad<M>
 ): <E, B>(onLeft: (e: E) => HKT<M, Either<E, B>>) => <A>(ma: HKT<M, Either<E, A>>) => HKT<M, Either<E, A>> {
+  const tapErrorM = tapError(M)
+  return (onLeft) => (ma) => tapErrorM(ma, onLeft)
+}
+
+/** @internal */
+export function tapError<M extends URIS2>(
+  M: Monad2<M>
+): <R, E, A, B>(ma: Kind2<M, R, Either<E, A>>, onLeft: (e: E) => Kind2<M, R, Either<E, B>>) => Kind2<M, R, Either<E, A>>
+/** @internal */
+export function tapError<M extends URIS>(
+  M: Monad1<M>
+): <E, A, B>(ma: Kind<M, Either<E, A>>, onLeft: (e: E) => Kind<M, Either<E, B>>) => Kind<M, Either<E, A>>
+/** @internal */
+export function tapError<M>(
+  M: Monad<M>
+): <E, A, B>(ma: HKT<M, Either<E, A>>, onLeft: (e: E) => HKT<M, Either<E, B>>) => HKT<M, Either<E, A>>
+/** @internal */
+export function tapError<M>(
+  M: Monad<M>
+): <E, A, B>(ma: HKT<M, Either<E, A>>, onLeft: (e: E) => HKT<M, Either<E, B>>) => HKT<M, Either<E, A>> {
   const orElseM = orElse(M)
-  return (onLeft) => orElseM((e) => M.map(onLeft(e), (eb) => (E.isLeft(eb) ? eb : E.left(e))))
+  return (ma, onLeft) =>
+    pipe(
+      ma,
+      orElseM((e) => M.map(onLeft(e), (eb) => (E.isLeft(eb) ? eb : E.left(e))))
+    )
 }
 
 /**
+ * @category error handling
  * @since 2.11.0
  */
 export function orLeft<M extends URIS3>(
@@ -728,24 +814,24 @@ export function toUnion<F>(F: Functor<F>): <E, A>(fa: HKT<F, Either<E, A>>) => H
 // deprecated
 // -------------------------------------------------------------------------------------
 
-// tslint:disable: deprecation
-
+// eslint-disable-next-line import/first
 import URI = E.URI
 
 /**
- * @category model
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
 export interface EitherT<M, E, A> extends HKT<M, Either<E, A>> {}
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
 export interface EitherM<M> extends ApplicativeCompositionHKT2<M, URI> {
   readonly chain: <E, A, B>(ma: EitherT<M, E, A>, f: (a: A) => EitherT<M, E, B>) => EitherT<M, E, B>
-  readonly alt: <E, A>(fa: EitherT<M, E, A>, that: Lazy<EitherT<M, E, A>>) => EitherT<M, E, A>
+  readonly alt: <E, A>(fa: EitherT<M, E, A>, that: LazyArg<EitherT<M, E, A>>) => EitherT<M, E, A>
   readonly bimap: <E, A, N, B>(ma: EitherT<M, E, A>, f: (e: E) => N, g: (a: A) => B) => EitherT<M, N, B>
   readonly mapLeft: <E, A, N>(ma: EitherT<M, E, A>, f: (e: E) => N) => EitherT<M, N, A>
   readonly fold: <E, A, R>(ma: EitherT<M, E, A>, onLeft: (e: E) => HKT<M, R>, onRight: (a: A) => HKT<M, R>) => HKT<M, R>
@@ -758,19 +844,20 @@ export interface EitherM<M> extends ApplicativeCompositionHKT2<M, URI> {
 }
 
 /**
- * @category model
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
 export type EitherT1<M extends URIS, E, A> = Kind<M, Either<E, A>>
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
 export interface EitherM1<M extends URIS> extends ApplicativeComposition12<M, URI> {
   readonly chain: <E, A, B>(ma: EitherT1<M, E, A>, f: (a: A) => EitherT1<M, E, B>) => EitherT1<M, E, B>
-  readonly alt: <E, A>(fa: EitherT1<M, E, A>, that: Lazy<EitherT1<M, E, A>>) => EitherT1<M, E, A>
+  readonly alt: <E, A>(fa: EitherT1<M, E, A>, that: LazyArg<EitherT1<M, E, A>>) => EitherT1<M, E, A>
   readonly bimap: <E, A, N, B>(ma: EitherT1<M, E, A>, f: (e: E) => N, g: (a: A) => B) => EitherT1<M, N, B>
   readonly mapLeft: <E, A, N>(ma: EitherT1<M, E, A>, f: (e: E) => N) => EitherT1<M, N, A>
   readonly fold: <E, A, R>(
@@ -787,20 +874,20 @@ export interface EitherM1<M extends URIS> extends ApplicativeComposition12<M, UR
 }
 
 /**
- * @category model
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
 export type EitherT2<M extends URIS2, R, E, A> = Kind2<M, R, Either<E, A>>
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
-
 export interface EitherM2<M extends URIS2> extends ApplicativeComposition22<M, URI> {
   readonly chain: <R, E, A, B>(ma: EitherT2<M, R, E, A>, f: (a: A) => EitherT2<M, R, E, B>) => EitherT2<M, R, E, B>
-  readonly alt: <R, E, A>(fa: EitherT2<M, R, E, A>, that: Lazy<EitherT2<M, R, E, A>>) => EitherT2<M, R, E, A>
+  readonly alt: <R, E, A>(fa: EitherT2<M, R, E, A>, that: LazyArg<EitherT2<M, R, E, A>>) => EitherT2<M, R, E, A>
   readonly bimap: <R, E, A, N, B>(ma: EitherT2<M, R, E, A>, f: (e: E) => N, g: (a: A) => B) => EitherT2<M, R, N, B>
   readonly mapLeft: <R, E, A, N>(ma: EitherT2<M, R, E, A>, f: (e: E) => N) => EitherT2<M, R, N, A>
   readonly fold: <R, E, A, B>(
@@ -820,6 +907,7 @@ export interface EitherM2<M extends URIS2> extends ApplicativeComposition22<M, U
 }
 
 /**
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */

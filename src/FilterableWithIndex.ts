@@ -1,7 +1,6 @@
 /**
  * @since 2.0.0
  */
-import { Separated } from './Separated'
 import { Either } from './Either'
 import {
   Filterable,
@@ -9,8 +8,8 @@ import {
   Filterable2,
   Filterable2C,
   Filterable3,
-  Filterable4,
-  Filterable3C
+  Filterable3C,
+  Filterable4
 } from './Filterable'
 import {
   FunctorWithIndex,
@@ -18,11 +17,12 @@ import {
   FunctorWithIndex2,
   FunctorWithIndex2C,
   FunctorWithIndex3,
-  FunctorWithIndex4,
-  FunctorWithIndex3C
+  FunctorWithIndex3C,
+  FunctorWithIndex4
 } from './FunctorWithIndex'
-import { HKT, Kind, Kind2, Kind3, URIS, URIS2, URIS3, URIS4, Kind4 } from './HKT'
+import { HKT, Kind, Kind2, Kind3, Kind4, URIS, URIS2, URIS3, URIS4 } from './HKT'
 import { Option } from './Option'
+import { Separated } from './Separated'
 
 // -------------------------------------------------------------------------------------
 // model
@@ -55,7 +55,7 @@ export interface PartitionWithIndex<F, I> {
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.0.0
  */
 export interface FilterableWithIndex<F, I> extends FunctorWithIndex<F, I>, Filterable<F> {
@@ -85,7 +85,7 @@ export interface PartitionWithIndex1<F extends URIS, I> {
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.0.0
  */
 export interface FilterableWithIndex1<F extends URIS, I> extends FunctorWithIndex1<F, I>, Filterable1<F> {
@@ -118,7 +118,7 @@ export interface PartitionWithIndex2<F extends URIS2, I> {
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.0.0
  */
 export interface FilterableWithIndex2<F extends URIS2, I> extends FunctorWithIndex2<F, I>, Filterable2<F> {
@@ -151,7 +151,7 @@ export interface PartitionWithIndex2C<F extends URIS2, I, E> {
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.0.0
  */
 export interface FilterableWithIndex2C<F extends URIS2, I, E> extends FunctorWithIndex2C<F, I, E>, Filterable2C<F, E> {
@@ -181,7 +181,7 @@ export interface FilterWithIndex3C<F extends URIS3, I, E> {
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.2.0
  */
 export interface FilterableWithIndex3C<F extends URIS3, I, E> extends FunctorWithIndex3C<F, I, E>, Filterable3C<F, E> {
@@ -223,7 +223,7 @@ export interface PartitionWithIndex3C<F extends URIS3, I, E> {
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.0.0
  */
 export interface FilterableWithIndex3<F extends URIS3, I> extends FunctorWithIndex3<F, I>, Filterable3<F> {
@@ -265,7 +265,7 @@ export interface PartitionWithIndex4<F extends URIS4, I> {
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.0.0
  */
 export interface FilterableWithIndex4<F extends URIS4, I> extends FunctorWithIndex4<F, I>, Filterable4<F> {

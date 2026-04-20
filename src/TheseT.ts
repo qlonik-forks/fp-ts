@@ -3,7 +3,7 @@
  */
 import { ap as ap_, Apply, Apply1, Apply2, Apply2C, Apply3, Apply3C } from './Apply'
 import { Chain, Chain1, Chain2, Chain2C, Chain3, Chain3C } from './Chain'
-import { flow, Lazy, pipe } from './function'
+import { flow, LazyArg, pipe } from './function'
 import { Functor, Functor1, Functor2, Functor2C, Functor3, Functor3C, map as map_ } from './Functor'
 import { HKT, Kind, Kind2, Kind3, URIS, URIS2, URIS3 } from './HKT'
 import { Monad, Monad1, Monad2, Monad2C, Monad3, Monad3C } from './Monad'
@@ -42,10 +42,10 @@ export function left<F>(F: Pointed<F>): <E, A = never>(e: E) => HKT<F, These<E, 
 /**
  * @since 2.10.0
  */
-export function both<F extends URIS3>(F: Pointed3<F>): <E, A, R, FE>(e: E, a: A) => Kind3<F, R, FE, These<E, A>>
-export function both<F extends URIS3, FE>(F: Pointed3C<F, FE>): <E, A, R>(e: E, a: A) => Kind3<F, R, FE, These<E, A>>
-export function both<F extends URIS2>(F: Pointed2<F>): <E, A, FE>(e: E, a: A) => Kind2<F, FE, These<E, A>>
-export function both<F extends URIS2, FE>(F: Pointed2C<F, FE>): <E, A>(e: E, a: A) => Kind2<F, FE, These<E, A>>
+export function both<F extends URIS3>(F: Pointed3<F>): <E, A, S, R>(e: E, a: A) => Kind3<F, S, R, These<E, A>>
+export function both<F extends URIS3, R>(F: Pointed3C<F, R>): <E, A>(e: E, a: A) => Kind3<F, R, R, These<E, A>>
+export function both<F extends URIS2>(F: Pointed2<F>): <E, A, R>(e: E, a: A) => Kind2<F, R, These<E, A>>
+export function both<F extends URIS2, R>(F: Pointed2C<F, R>): <E, A>(e: E, a: A) => Kind2<F, R, These<E, A>>
 export function both<F extends URIS>(F: Pointed1<F>): <E, A>(e: E, a: A) => Kind<F, These<E, A>>
 export function both<F>(F: Pointed<F>): <E, A = never>(e: E, a: A) => HKT<F, These<E, A>>
 export function both<F>(F: Pointed<F>): <E, A = never>(e: E, a: A) => HKT<F, These<E, A>> {
@@ -403,25 +403,25 @@ export function swap<F>(F: Functor<F>): <E, A>(ma: HKT<F, These<E, A>>) => HKT<F
  */
 export function toTuple2<F extends URIS3>(
   F: Functor3<F>
-): <E, A>(e: Lazy<E>, a: Lazy<A>) => <R, FE>(fa: Kind3<F, R, FE, These<E, A>>) => Kind3<F, R, FE, readonly [E, A]>
+): <E, A>(e: LazyArg<E>, a: LazyArg<A>) => <R, FE>(fa: Kind3<F, R, FE, These<E, A>>) => Kind3<F, R, FE, readonly [E, A]>
 export function toTuple2<F extends URIS3, FE>(
   F: Functor3C<F, FE>
-): <E, A>(e: Lazy<E>, a: Lazy<A>) => <R>(fa: Kind3<F, R, FE, These<E, A>>) => Kind3<F, R, FE, readonly [E, A]>
+): <E, A>(e: LazyArg<E>, a: LazyArg<A>) => <R>(fa: Kind3<F, R, FE, These<E, A>>) => Kind3<F, R, FE, readonly [E, A]>
 export function toTuple2<F extends URIS2>(
   F: Functor2<F>
-): <E, A>(e: Lazy<E>, a: Lazy<A>) => <FE>(fa: Kind2<F, FE, These<E, A>>) => Kind2<F, FE, readonly [E, A]>
+): <E, A>(e: LazyArg<E>, a: LazyArg<A>) => <FE>(fa: Kind2<F, FE, These<E, A>>) => Kind2<F, FE, readonly [E, A]>
 export function toTuple2<F extends URIS2, FE>(
   F: Functor2C<F, FE>
-): <E, A>(e: Lazy<E>, a: Lazy<A>) => (fa: Kind2<F, FE, These<E, A>>) => Kind2<F, FE, readonly [E, A]>
+): <E, A>(e: LazyArg<E>, a: LazyArg<A>) => (fa: Kind2<F, FE, These<E, A>>) => Kind2<F, FE, readonly [E, A]>
 export function toTuple2<F extends URIS>(
   F: Functor1<F>
-): <E, A>(e: Lazy<E>, a: Lazy<A>) => (fa: Kind<F, These<E, A>>) => Kind<F, readonly [E, A]>
+): <E, A>(e: LazyArg<E>, a: LazyArg<A>) => (fa: Kind<F, These<E, A>>) => Kind<F, readonly [E, A]>
 export function toTuple2<F>(
   F: Functor<F>
-): <E, A>(e: Lazy<E>, a: Lazy<A>) => (fa: HKT<F, These<E, A>>) => HKT<F, readonly [E, A]>
+): <E, A>(e: LazyArg<E>, a: LazyArg<A>) => (fa: HKT<F, These<E, A>>) => HKT<F, readonly [E, A]>
 export function toTuple2<F>(
   F: Functor<F>
-): <E, A>(e: Lazy<E>, a: Lazy<A>) => (fa: HKT<F, These<E, A>>) => HKT<F, readonly [E, A]> {
+): <E, A>(e: LazyArg<E>, a: LazyArg<A>) => (fa: HKT<F, These<E, A>>) => HKT<F, readonly [E, A]> {
   return (e, a) => (fa) => F.map(fa, T.toTuple2(e, a))
 }
 
@@ -429,16 +429,15 @@ export function toTuple2<F>(
 // deprecated
 // -------------------------------------------------------------------------------------
 
-// tslint:disable: deprecation
-
 /**
- * @category model
+ * @category zone of death
  * @since 2.4.0
  * @deprecated
  */
 export interface TheseT<M, E, A> extends HKT<M, These<E, A>> {}
 
 /**
+ * @category zone of death
  * @since 2.4.0
  * @deprecated
  */
@@ -459,9 +458,7 @@ export interface TheseM<M> {
   readonly right: <E, A>(a: A) => TheseT<M, E, A>
   readonly both: <E, A>(e: E, a: A) => TheseT<M, E, A>
   readonly toTuple: <E, A>(fa: TheseT<M, E, A>, e: E, a: A) => HKT<M, [E, A]>
-  readonly getMonad: <E>(
-    S: Semigroup<E>
-  ) => {
+  readonly getMonad: <E>(S: Semigroup<E>) => {
     readonly _E: E
     readonly map: <A, B>(ma: TheseT<M, E, A>, f: (a: A) => B) => TheseT<M, E, B>
     readonly of: <A>(a: A) => TheseT<M, E, A>
@@ -471,13 +468,14 @@ export interface TheseM<M> {
 }
 
 /**
- * @category model
+ * @category zone of death
  * @since 2.4.0
  * @deprecated
  */
 export type TheseT1<M extends URIS, E, A> = Kind<M, These<E, A>>
 
 /**
+ * @category zone of death
  * @since 2.4.0
  * @deprecated
  */
@@ -498,9 +496,7 @@ export interface TheseM1<M extends URIS> {
   readonly right: <E, A>(a: A) => TheseT1<M, E, A>
   readonly both: <E, A>(e: E, a: A) => TheseT1<M, E, A>
   readonly toTuple: <E, A>(fa: TheseT1<M, E, A>, e: E, a: A) => Kind<M, [E, A]>
-  readonly getMonad: <E>(
-    S: Semigroup<E>
-  ) => {
+  readonly getMonad: <E>(S: Semigroup<E>) => {
     readonly _E: E
     readonly map: <A, B>(ma: TheseT1<M, E, A>, f: (a: A) => B) => TheseT1<M, E, B>
     readonly of: <A>(a: A) => TheseT1<M, E, A>
@@ -510,13 +506,14 @@ export interface TheseM1<M extends URIS> {
 }
 
 /**
- * @category model
+ * @category zone of death
  * @since 2.4.0
  * @deprecated
  */
 export type TheseT2<M extends URIS2, R, E, A> = Kind2<M, R, These<E, A>>
 
 /**
+ * @category zone of death
  * @since 2.4.0
  * @deprecated
  */
@@ -537,9 +534,7 @@ export interface TheseM2<M extends URIS2> {
   readonly right: <R, E, A>(a: A) => TheseT2<M, R, E, A>
   readonly both: <R, E, A>(e: E, a: A) => TheseT2<M, R, E, A>
   readonly toTuple: <R, E, A>(fa: TheseT2<M, R, E, A>, e: E, a: A) => Kind2<M, R, [E, A]>
-  readonly getMonad: <E>(
-    S: Semigroup<E>
-  ) => {
+  readonly getMonad: <E>(S: Semigroup<E>) => {
     readonly _E: E
     readonly map: <R, A, B>(ma: TheseT2<M, R, E, A>, f: (a: A) => B) => TheseT2<M, R, E, B>
     readonly of: <R, A>(a: A) => TheseT2<M, R, E, A>
@@ -549,6 +544,7 @@ export interface TheseM2<M extends URIS2> {
 }
 
 /**
+ * @category zone of death
  * @since 2.4.0
  * @deprecated
  */
@@ -564,7 +560,9 @@ export function getTheseM<M>(M: Monad<M>): TheseM<M> {
   const _bimap = bimap(M)
   const _mapLeft = mapLeft(M)
   const _fold = matchE(M)
-  const _toTuple2: <E, A>(e: Lazy<E>, a: Lazy<A>) => (fa: HKT<M, T.These<E, A>>) => HKT<M, [E, A]> = toTuple2(M) as any
+  const _toTuple2: <E, A>(e: LazyArg<E>, a: LazyArg<A>) => (fa: HKT<M, T.These<E, A>>) => HKT<M, [E, A]> = toTuple2(
+    M
+  ) as any
   const of = right(M)
 
   const mapT = <E, A, B>(fa: TheseT<M, E, A>, f: (a: A) => B): TheseT<M, E, B> => pipe(fa, _map(f))

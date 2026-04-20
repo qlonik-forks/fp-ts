@@ -23,10 +23,24 @@ describe('State', () => {
       U.deepStrictEqual(pipe(_.of('a'), _.apSecond(_.of('b')))(0), ['b', 0])
     })
 
+    it('flatMap', () => {
+      const f = (_n: number) => (s: number) => tuple(s - 1, s + 1)
+      const x = (s: number) => tuple(s - 1, s + 1)
+      U.deepStrictEqual(pipe(x, _.flatMap(f))(0), [0, 2])
+      U.deepStrictEqual(_.flatMap(x, f)(0), [0, 2])
+    })
+
     it('chain', () => {
       const f = (_n: number) => (s: number) => tuple(s - 1, s + 1)
       const x = (s: number) => tuple(s - 1, s + 1)
       U.deepStrictEqual(pipe(x, _.chain(f))(0), [0, 2])
+    })
+
+    it('tap', () => {
+      const f = (_n: number) => (s: number) => tuple(s - 1, s + 1)
+      const x = (s: number) => tuple(s - 1, s + 1)
+      U.deepStrictEqual(pipe(x, _.tap(f))(0), [-1, 2])
+      U.deepStrictEqual(_.tap(x, f)(0), [-1, 2])
     })
 
     it('chainFirst', () => {
@@ -41,12 +55,10 @@ describe('State', () => {
   })
 
   it('evalState', () => {
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.evalState(_.of<number, string>('a'), 0), 'a')
   })
 
   it('execState', () => {
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.execState(_.of<number, string>('a'), 0), 0)
   })
 
@@ -79,9 +91,10 @@ describe('State', () => {
       pipe(
         _.of(1),
         _.bindTo('a'),
-        _.bind('b', () => _.of('b'))
+        _.bind('b', () => _.of('b')),
+        _.let('c', ({ a, b }) => [a, b])
       )('state'),
-      [{ a: 1, b: 'b' }, 'state']
+      [{ a: 1, b: 'b', c: [1, 'b'] }, 'state']
     )
   })
 
@@ -100,8 +113,10 @@ describe('State', () => {
 
     // old
     it('sequenceArray', () => {
-      const append = (n: number): _.State<ReadonlyArray<number>, number> => (s) => [n, [...s, n]]
-      // tslint:disable-next-line: deprecation
+      const append =
+        (n: number): _.State<ReadonlyArray<number>, number> =>
+        (s) =>
+          [n, [...s, n]]
       U.deepStrictEqual(pipe([append(1), append(2)], _.sequenceArray)([]), [
         [1, 2],
         [1, 2]

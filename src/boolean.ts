@@ -3,7 +3,7 @@
  */
 import * as BA from './BooleanAlgebra'
 import * as E from './Eq'
-import { Lazy } from './function'
+import { LazyArg } from './function'
 import { Monoid } from './Monoid'
 import * as O from './Ord'
 import { Refinement } from './Refinement'
@@ -20,23 +20,23 @@ import * as S from './Show'
  */
 export const isBoolean: Refinement<unknown, boolean> = (u: unknown): u is boolean => typeof u === 'boolean'
 
-// -------------------------------------------------------------------------------------
-// destructors
-// -------------------------------------------------------------------------------------
-
 /**
  * Less strict version of [`match`](#match).
  *
- * @category destructors
+ * The `W` suffix (short for **W**idening) means that the handler return types will be merged.
+ *
+ * @category pattern matching
  * @since 2.10.0
  */
-export const matchW = <A, B>(onFalse: Lazy<A>, onTrue: Lazy<B>) => (value: boolean): A | B =>
-  value ? onTrue() : onFalse()
+export const matchW =
+  <A, B>(onFalse: LazyArg<A>, onTrue: LazyArg<B>) =>
+  (value: boolean): A | B =>
+    value ? onTrue() : onFalse()
 
 /**
  * Alias of [`matchW`](#matchw).
  *
- * @category destructors
+ * @category pattern matching
  * @since 2.10.0
  */
 export const foldW = matchW
@@ -59,15 +59,15 @@ export const foldW = matchW
  *  some('true')
  * )
  *
- * @category destructors
+ * @category pattern matching
  * @since 2.10.0
  */
-export const match: <A>(onFalse: Lazy<A>, onTrue: Lazy<A>) => (value: boolean) => A = foldW
+export const match: <A>(onFalse: LazyArg<A>, onTrue: LazyArg<A>) => (value: boolean) => A = foldW
 
 /**
  * Alias of [`match`](#match).
  *
- * @category destructors
+ * @category pattern matching
  * @since 2.2.0
  */
 export const fold = match

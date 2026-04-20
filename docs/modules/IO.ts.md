@@ -1,6 +1,6 @@
 ---
 title: IO.ts
-nav_order: 51
+nav_order: 50
 parent: Modules
 ---
 
@@ -13,8 +13,10 @@ interface IO<A> {
 ```
 
 `IO<A>` represents a non-deterministic synchronous computation that can cause side effects, yields a value of
-type `A` and **never fails**. If you want to represent a synchronous computation that may fail, please see
-`IOEither`.
+type `A` and **never fails**.
+
+If you want to represent a synchronous computation that may fail, please see `IOEither`.
+If you want to represent a synchronous computation that may yield nothing, please see `IOOption`.
 
 Added in v2.0.0
 
@@ -22,97 +24,80 @@ Added in v2.0.0
 
 <h2 class="text-delta">Table of contents</h2>
 
-- [Apply](#apply)
-  - [ap](#ap)
-- [Functor](#functor)
-  - [map](#map)
-- [Monad](#monad)
-  - [chain](#chain)
-- [Pointed](#pointed)
-  - [of](#of)
 - [combinators](#combinators)
-  - [apFirst](#apfirst)
-  - [apSecond](#apsecond)
-  - [chainFirst](#chainfirst)
-  - [flap](#flap)
-  - [flatten](#flatten)
+  - [tap](#tap)
 - [constructors](#constructors)
-  - [~~fromIO~~](#fromio)
-- [instances](#instances)
-  - [Applicative](#applicative)
-  - [Apply](#apply-1)
-  - [Chain](#chain)
-  - [ChainRec](#chainrec)
-  - [FromIO](#fromio)
-  - [Functor](#functor-1)
-  - [Monad](#monad-1)
-  - [MonadIO](#monadio)
-  - [Pointed](#pointed-1)
-  - [URI](#uri)
-  - [URI (type alias)](#uri-type-alias)
-  - [~~getMonoid~~](#getmonoid)
-  - [~~getSemigroup~~](#getsemigroup)
-  - [~~io~~](#io)
-- [model](#model)
-  - [IO (interface)](#io-interface)
-- [utils](#utils)
-  - [ApT](#apt)
+  - [of](#of)
+- [do notation](#do-notation)
   - [Do](#do)
   - [apS](#aps)
   - [bind](#bind)
   - [bindTo](#bindto)
+  - [let](#let)
+- [instances](#instances)
+  - [Applicative](#applicative)
+  - [Apply](#apply)
+  - [Chain](#chain)
+  - [ChainRec](#chainrec)
+  - [FromIO](#fromio)
+  - [Functor](#functor)
+  - [Monad](#monad)
+  - [MonadIO](#monadio)
+  - [Pointed](#pointed)
+- [legacy](#legacy)
+  - [chain](#chain)
+  - [chainFirst](#chainfirst)
+- [mapping](#mapping)
+  - [as](#as)
+  - [asUnit](#asunit)
+  - [flap](#flap)
+  - [map](#map)
+- [model](#model)
+  - [IO (interface)](#io-interface)
+- [sequencing](#sequencing)
+  - [flatMap](#flatmap)
+  - [flatten](#flatten)
+- [traversing](#traversing)
   - [sequenceArray](#sequencearray)
   - [traverseArray](#traversearray)
   - [traverseArrayWithIndex](#traversearraywithindex)
   - [traverseReadonlyArrayWithIndex](#traversereadonlyarraywithindex)
   - [traverseReadonlyNonEmptyArrayWithIndex](#traversereadonlynonemptyarraywithindex)
+- [type lambdas](#type-lambdas)
+  - [URI](#uri)
+  - [URI (type alias)](#uri-type-alias)
+- [utils](#utils)
+  - [ApT](#apt)
+  - [ap](#ap)
+  - [apFirst](#apfirst)
+  - [apSecond](#apsecond)
+- [zone of death](#zone-of-death)
+  - [~~fromIO~~](#fromio)
+  - [~~getMonoid~~](#getmonoid)
+  - [~~getSemigroup~~](#getsemigroup)
+  - [~~io~~](#io)
 
 ---
 
-# Apply
+# combinators
 
-## ap
+## tap
 
-Apply a function to an argument under a type constructor.
-
-**Signature**
-
-```ts
-export declare const ap: <A>(fa: IO<A>) => <B>(fab: IO<(a: A) => B>) => IO<B>
-```
-
-Added in v2.0.0
-
-# Functor
-
-## map
-
-`map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
-use the type constructor `F` to represent some computational context.
+Composes computations in sequence, using the return value of one computation to determine the next computation and
+keeping only the result of the first.
 
 **Signature**
 
 ```ts
-export declare const map: <A, B>(f: (a: A) => B) => (fa: IO<A>) => IO<B>
+export declare const tap: {
+  <A, _>(self: IO<A>, f: (a: A) => IO<_>): IO<A>
+  <A, _>(f: (a: A) => IO<_>): (self: IO<A>) => IO<A>
+}
 ```
 
-Added in v2.0.0
+Added in v2.15.0
 
-# Monad
-
-## chain
-
-Composes computations in sequence, using the return value of one computation to determine the next computation.
-
-**Signature**
-
-```ts
-export declare const chain: <A, B>(f: (a: A) => IO<B>) => (ma: IO<A>) => IO<B>
-```
-
-Added in v2.0.0
-
-# Pointed
+# constructors
 
 ## of
 
@@ -124,86 +109,66 @@ export declare const of: <A>(a: A) => IO<A>
 
 Added in v2.0.0
 
-# combinators
+# do notation
 
-## apFirst
-
-Combine two effectful actions, keeping only the result of the first.
-
-Derivable from `Apply`.
+## Do
 
 **Signature**
 
 ```ts
-export declare const apFirst: <B>(second: IO<B>) => <A>(first: IO<A>) => IO<A>
+export declare const Do: IO<{}>
 ```
 
-Added in v2.0.0
+Added in v2.9.0
 
-## apSecond
-
-Combine two effectful actions, keeping only the result of the second.
-
-Derivable from `Apply`.
+## apS
 
 **Signature**
 
 ```ts
-export declare const apSecond: <B>(second: IO<B>) => <A>(first: IO<A>) => IO<B>
+export declare const apS: <N, A, B>(
+  name: Exclude<N, keyof A>,
+  fb: IO<B>
+) => (fa: IO<A>) => IO<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
 ```
 
-Added in v2.0.0
+Added in v2.8.0
 
-## chainFirst
-
-Composes computations in sequence, using the return value of one computation to determine the next computation and
-keeping only the result of the first.
-
-Derivable from `Chain`.
+## bind
 
 **Signature**
 
 ```ts
-export declare const chainFirst: <A, B>(f: (a: A) => IO<B>) => (first: IO<A>) => IO<A>
+export declare const bind: <N, A, B>(
+  name: Exclude<N, keyof A>,
+  f: (a: A) => IO<B>
+) => (ma: IO<A>) => IO<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
 ```
 
-Added in v2.0.0
+Added in v2.8.0
 
-## flap
-
-Derivable from `Functor`.
+## bindTo
 
 **Signature**
 
 ```ts
-export declare const flap: <A>(a: A) => <B>(fab: IO<(a: A) => B>) => IO<B>
+export declare const bindTo: <N>(name: N) => <A>(fa: IO<A>) => IO<{ readonly [K in N]: A }>
 ```
 
-Added in v2.10.0
+Added in v2.8.0
 
-## flatten
-
-Derivable from `Chain`.
+## let
 
 **Signature**
 
 ```ts
-export declare const flatten: <A>(mma: IO<IO<A>>) => IO<A>
+export declare const let: <N, A, B>(
+  name: Exclude<N, keyof A>,
+  f: (a: A) => B
+) => (fa: IO<A>) => IO<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
 ```
 
-Added in v2.0.0
-
-# constructors
-
-## ~~fromIO~~
-
-**Signature**
-
-```ts
-export declare const fromIO: NaturalTransformation11<'IO', 'IO'>
-```
-
-Added in v2.7.0
+Added in v2.13.0
 
 # instances
 
@@ -232,7 +197,7 @@ Added in v2.10.0
 **Signature**
 
 ```ts
-export declare const Chain: Chain1<'IO'>
+export declare const Chain: chainable.Chain1<'IO'>
 ```
 
 Added in v2.10.0
@@ -297,58 +262,77 @@ export declare const Pointed: Pointed1<'IO'>
 
 Added in v2.10.0
 
-## URI
+# legacy
+
+## chain
+
+Alias of `flatMap`.
 
 **Signature**
 
 ```ts
-export declare const URI: 'IO'
+export declare const chain: <A, B>(f: (a: A) => IO<B>) => (ma: IO<A>) => IO<B>
 ```
 
 Added in v2.0.0
 
-## URI (type alias)
+## chainFirst
+
+Alias of `tap`.
 
 **Signature**
 
 ```ts
-export type URI = typeof URI
+export declare const chainFirst: <A, B>(f: (a: A) => IO<B>) => (first: IO<A>) => IO<A>
 ```
 
 Added in v2.0.0
 
-## ~~getMonoid~~
+# mapping
 
-Use [`getApplicativeMonoid`](./Applicative.ts.html#getapplicativemonoid) instead.
+## as
+
+Maps the value to the specified constant value.
 
 **Signature**
 
 ```ts
-export declare const getMonoid: <A>(M: Monoid<A>) => Monoid<IO<A>>
+export declare const as: { <A>(a: A): <_>(self: IO<_>) => IO<A>; <_, A>(self: IO<_>, a: A): IO<A> }
 ```
 
-Added in v2.0.0
+Added in v2.16.0
 
-## ~~getSemigroup~~
+## asUnit
 
-Use [`getApplySemigroup`](./Apply.ts.html#getapplysemigroup) instead.
+Maps the value to the void constant value.
 
 **Signature**
 
 ```ts
-export declare const getSemigroup: <A>(S: Semigroup<A>) => Semigroup<IO<A>>
+export declare const asUnit: <_>(self: IO<_>) => IO<void>
 ```
 
-Added in v2.0.0
+Added in v2.16.0
 
-## ~~io~~
-
-Use small, specific instances instead.
+## flap
 
 **Signature**
 
 ```ts
-export declare const io: Monad1<'IO'> & MonadIO1<'IO'> & ChainRec1<'IO'>
+export declare const flap: <A>(a: A) => <B>(fab: IO<(a: A) => B>) => IO<B>
+```
+
+Added in v2.10.0
+
+## map
+
+`map` can be used to turn functions `(a: A) => B` into functions `(fa: F<A>) => F<B>` whose argument and return types
+use the type constructor `F` to represent some computational context.
+
+**Signature**
+
+```ts
+export declare const map: <A, B>(f: (a: A) => B) => (fa: IO<A>) => IO<B>
 ```
 
 Added in v2.0.0
@@ -367,65 +351,36 @@ export interface IO<A> {
 
 Added in v2.0.0
 
-# utils
+# sequencing
 
-## ApT
-
-**Signature**
-
-```ts
-export declare const ApT: IO<readonly []>
-```
-
-Added in v2.11.0
-
-## Do
+## flatMap
 
 **Signature**
 
 ```ts
-export declare const Do: IO<{}>
+export declare const flatMap: {
+  <A, B>(f: (a: A) => IO<B>): (ma: IO<A>) => IO<B>
+  <A, B>(ma: IO<A>, f: (a: A) => IO<B>): IO<B>
+}
 ```
 
-Added in v2.9.0
+Added in v2.14.0
 
-## apS
+## flatten
 
 **Signature**
 
 ```ts
-export declare const apS: <N, A, B>(
-  name: Exclude<N, keyof A>,
-  fb: IO<B>
-) => (fa: IO<A>) => IO<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
+export declare const flatten: <A>(mma: IO<IO<A>>) => IO<A>
 ```
 
-Added in v2.8.0
+Added in v2.0.0
 
-## bind
-
-**Signature**
-
-```ts
-export declare const bind: <N, A, B>(
-  name: Exclude<N, keyof A>,
-  f: (a: A) => IO<B>
-) => (ma: IO<A>) => IO<{ readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }>
-```
-
-Added in v2.8.0
-
-## bindTo
-
-**Signature**
-
-```ts
-export declare const bindTo: <N>(name: N) => <A>(fa: IO<A>) => IO<{ readonly [K in N]: A }>
-```
-
-Added in v2.8.0
+# traversing
 
 ## sequenceArray
+
+Equivalent to `ReadonlyArray#sequence(Applicative)`.
 
 **Signature**
 
@@ -437,6 +392,8 @@ Added in v2.9.0
 
 ## traverseArray
 
+Equivalent to `ReadonlyArray#traverse(Applicative)`.
+
 **Signature**
 
 ```ts
@@ -446,6 +403,8 @@ export declare const traverseArray: <A, B>(f: (a: A) => IO<B>) => (as: readonly 
 Added in v2.9.0
 
 ## traverseArrayWithIndex
+
+Equivalent to `ReadonlyArray#traverseWithIndex(Applicative)`.
 
 **Signature**
 
@@ -484,3 +443,121 @@ export declare const traverseReadonlyNonEmptyArrayWithIndex: <A, B>(
 ```
 
 Added in v2.11.0
+
+# type lambdas
+
+## URI
+
+**Signature**
+
+```ts
+export declare const URI: 'IO'
+```
+
+Added in v2.0.0
+
+## URI (type alias)
+
+**Signature**
+
+```ts
+export type URI = typeof URI
+```
+
+Added in v2.0.0
+
+# utils
+
+## ApT
+
+**Signature**
+
+```ts
+export declare const ApT: IO<readonly []>
+```
+
+Added in v2.11.0
+
+## ap
+
+**Signature**
+
+```ts
+export declare const ap: <A>(fa: IO<A>) => <B>(fab: IO<(a: A) => B>) => IO<B>
+```
+
+Added in v2.0.0
+
+## apFirst
+
+Combine two effectful actions, keeping only the result of the first.
+
+**Signature**
+
+```ts
+export declare const apFirst: <B>(second: IO<B>) => <A>(first: IO<A>) => IO<A>
+```
+
+Added in v2.0.0
+
+## apSecond
+
+Combine two effectful actions, keeping only the result of the second.
+
+**Signature**
+
+```ts
+export declare const apSecond: <B>(second: IO<B>) => <A>(first: IO<A>) => IO<B>
+```
+
+Added in v2.0.0
+
+# zone of death
+
+## ~~fromIO~~
+
+**Signature**
+
+```ts
+export declare const fromIO: <A>(fa: IO<A>) => IO<A>
+```
+
+Added in v2.7.0
+
+## ~~getMonoid~~
+
+Use [`getApplicativeMonoid`](./Applicative.ts.html#getapplicativemonoid) instead.
+
+**Signature**
+
+```ts
+export declare const getMonoid: <A>(M: Monoid<A>) => Monoid<IO<A>>
+```
+
+Added in v2.0.0
+
+## ~~getSemigroup~~
+
+Use [`getApplySemigroup`](./Apply.ts.html#getapplysemigroup) instead.
+
+**Signature**
+
+```ts
+export declare const getSemigroup: <A>(S: Semigroup<A>) => Semigroup<IO<A>>
+```
+
+Added in v2.0.0
+
+## ~~io~~
+
+This instance is deprecated, use small, specific instances instead.
+For example if a function needs a `Functor` instance, pass `IO.Functor` instead of `IO.io`
+(where `IO` is from `import IO from 'fp-ts/IO'`)
+
+**Signature**
+
+```ts
+export declare const io: Monad1<'IO'> & MonadIO1<'IO'> & ChainRec1<'IO'>
+```
+
+Added in v2.0.0

@@ -1,11 +1,10 @@
-import * as U from './util'
-import * as RA from '../src/ReadonlyArray'
 import { getFoldableWithIndexComposition } from '../src/FoldableWithIndex'
+import * as RA from '../src/ReadonlyArray'
 import * as S from '../src/string'
+import * as U from './util'
 
 describe('FoldableWithIndex', () => {
   it('getFoldableWithIndexComposition', () => {
-    // tslint:disable-next-line: deprecation
     const arrayOfArray = getFoldableWithIndexComposition(RA.FoldableWithIndex, RA.FoldableWithIndex)
     const fa: ReadonlyArray<ReadonlyArray<string>> = [
       ['a', 'b'],

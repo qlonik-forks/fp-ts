@@ -24,6 +24,12 @@ describe('IO', () => {
       U.deepStrictEqual(pipe(_.of('a'), _.apSecond(_.of('b')))(), 'b')
     })
 
+    it('flatMap', () => {
+      const f = (n: number) => _.of(n * 2)
+      U.deepStrictEqual(pipe(_.of(1), _.flatMap(f))(), 2)
+      U.deepStrictEqual(_.flatMap(_.of(1), f)(), 2)
+    })
+
     it('chain', () => {
       const f = (n: number) => _.of(n * 2)
       U.deepStrictEqual(pipe(_.of(1), _.chain(f))(), 2)
@@ -33,6 +39,12 @@ describe('IO', () => {
       U.deepStrictEqual(pipe(_.of(_.of(1)), _.flatten)(), 1)
     })
 
+    it('tap', () => {
+      const f = (n: number) => _.of(n * 2)
+      U.deepStrictEqual(pipe(_.of(1), _.tap(f))(), 1)
+      U.deepStrictEqual(_.tap(_.of(1), f)(), 1)
+    })
+
     it('chainFirst', () => {
       const f = (n: number) => _.of(n * 2)
       U.deepStrictEqual(pipe(_.of(1), _.chainFirst(f))(), 1)
@@ -40,21 +52,23 @@ describe('IO', () => {
   })
 
   it('getSemigroup', () => {
-    // tslint:disable-next-line: deprecation
     const S = _.getSemigroup(N.SemigroupSum)
-    // tslint:disable-next-line: readonly-array
     const log: Array<string> = []
-    const append = (message: string): _.IO<number> => () => log.push(message)
+    const append =
+      (message: string): _.IO<number> =>
+      () =>
+        log.push(message)
     U.deepStrictEqual(S.concat(append('a'), append('b'))(), 3)
     U.deepStrictEqual(log, ['a', 'b'])
   })
 
   it('getMonoid', () => {
-    // tslint:disable-next-line: deprecation
     const M = _.getMonoid(N.MonoidSum)
-    // tslint:disable-next-line: readonly-array
     const log: Array<string> = []
-    const append = (message: string): _.IO<number> => () => log.push(message)
+    const append =
+      (message: string): _.IO<number> =>
+      () =>
+        log.push(message)
     U.deepStrictEqual(M.concat(append('a'), M.empty)(), 1)
     U.deepStrictEqual(M.concat(M.empty, append('b'))(), 2)
     U.deepStrictEqual(log, ['a', 'b'])
@@ -70,9 +84,10 @@ describe('IO', () => {
       pipe(
         _.of(1),
         _.bindTo('a'),
-        _.bind('b', () => _.of('b'))
+        _.bind('b', () => _.of('b')),
+        _.let('c', ({ a, b }) => [a, b])
       )(),
-      { a: 1, b: 'b' }
+      { a: 1, b: 'b', c: [1, 'b'] }
     )
   })
 
@@ -91,15 +106,23 @@ describe('IO', () => {
 
     // old
     it('sequenceArray', () => {
-      // tslint:disable-next-line: readonly-array
       const log: Array<number | string> = []
-      const append = (n: number): _.IO<number> => () => {
-        log.push(n)
-        return n
-      }
-      // tslint:disable-next-line: deprecation
+      const append =
+        (n: number): _.IO<number> =>
+        () => {
+          log.push(n)
+          return n
+        }
       U.deepStrictEqual(pipe([append(1), append(2)], _.sequenceArray)(), [1, 2])
       U.deepStrictEqual(log, [1, 2])
     })
+  })
+
+  it('as', () => {
+    U.deepStrictEqual(pipe(_.of('a'), _.as('b'))(), 'b')
+  })
+
+  it('asUnit', () => {
+    U.deepStrictEqual(pipe(_.of('a'), _.asUnit)(), undefined)
   })
 })

@@ -1,4 +1,5 @@
 import * as assert from 'assert'
+
 import * as A from '../src/Array'
 import { left, right } from '../src/Either'
 import { identity, pipe } from '../src/function'
@@ -25,7 +26,6 @@ describe('Record', () => {
         { key: 'a', value: 'c' },
         { key: 'b', value: false }
       ])
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(_.collect((key, val) => ({ key: key, value: val }))(x), [
         { key: 'a', value: 'c' },
         { key: 'b', value: false }
@@ -61,7 +61,6 @@ describe('Record', () => {
       U.deepStrictEqual(
         pipe(
           { k1: 'a', k2: 'b' },
-          // tslint:disable-next-line: deprecation
           _.reduce('', (b, a) => b + a)
         ),
         'ab'
@@ -69,7 +68,6 @@ describe('Record', () => {
       U.deepStrictEqual(
         pipe(
           { k2: 'b', k1: 'a' },
-          // tslint:disable-next-line: deprecation
           _.reduce('', (b, a) => b + a)
         ),
         'ab'
@@ -80,17 +78,13 @@ describe('Record', () => {
       U.deepStrictEqual(pipe({ a: 'a', b: 'b' }, _.foldMap(S.Ord)(S.Monoid)(identity)), 'ab')
       U.deepStrictEqual(_.getFoldable(S.Ord).foldMap(S.Monoid)({ a: 'a', b: 'b' }, identity), 'ab')
 
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(pipe({ a: 'a', b: 'b' }, _.foldMap(S.Monoid)(identity)), 'ab')
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(_.Foldable.foldMap(S.Monoid)({ a: 'a', b: 'b' }, identity), 'ab')
     })
 
     it('reduceRight', () => {
       const f = (a: string, acc: string) => acc + a
       U.deepStrictEqual(pipe({ a: 'a', b: 'b' }, _.reduceRight(S.Ord)('', f)), 'ba')
-
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(pipe({ a: 'a', b: 'b' }, _.reduceRight('', f)), 'ba')
     })
 
@@ -160,7 +154,6 @@ describe('Record', () => {
       U.deepStrictEqual(
         pipe(
           { k1: 'a', k2: 'b' },
-          // tslint:disable-next-line: deprecation
           _.reduceWithIndex('', (k, b, a) => b + k + a)
         ),
         'k1ak2b'
@@ -168,7 +161,6 @@ describe('Record', () => {
       U.deepStrictEqual(
         pipe(
           { k2: 'b', k1: 'a' },
-          // tslint:disable-next-line: deprecation
           _.reduceWithIndex('', (k, b, a) => b + k + a)
         ),
         'k1ak2b'
@@ -191,13 +183,11 @@ describe('Record', () => {
       U.deepStrictEqual(
         pipe(
           { k1: 'a', k2: 'b' },
-          // tslint:disable-next-line: deprecation
           _.foldMapWithIndex(S.Monoid)((k, a) => k + a)
         ),
         'k1ak2b'
       )
       U.deepStrictEqual(
-        // tslint:disable-next-line: deprecation
         _.FoldableWithIndex.foldMapWithIndex(S.Monoid)({ k1: 'a', k2: 'b' }, (k, a) => k + a),
         'k1ak2b'
       )
@@ -214,7 +204,6 @@ describe('Record', () => {
       U.deepStrictEqual(
         pipe(
           { k1: 'a', k2: 'b' },
-          // tslint:disable-next-line: deprecation
           _.reduceRightWithIndex('', (k, a, b) => b + k + a)
         ),
         'k2bk1a'
@@ -287,11 +276,7 @@ describe('Record', () => {
       U.deepStrictEqual(sequence({ a: O.some(1), b: O.some(2) }), O.some({ a: 1, b: 2 }))
       U.deepStrictEqual(sequence({ a: O.none, b: O.some(2) }), O.none)
 
-      U.deepStrictEqual(
-        // tslint:disable-next-line: deprecation
-        _.record.sequence(O.Applicative)({ a: O.some(1), b: O.some(2) }),
-        O.some({ a: 1, b: 2 })
-      )
+      U.deepStrictEqual(_.record.sequence(O.Applicative)({ a: O.some(1), b: O.some(2) }), O.some({ a: 1, b: 2 }))
     })
 
     it('traverseWithIndex', () => {
@@ -411,11 +396,12 @@ describe('Record', () => {
   })
 
   it('traverseWithIndex should sort the keys', () => {
-    // tslint:disable-next-line: readonly-array
     const log: Array<string> = []
-    const append = (message: string): IO.IO<void> => () => {
-      log.push(message)
-    }
+    const append =
+      (message: string): IO.IO<void> =>
+      () => {
+        log.push(message)
+      }
 
     pipe(
       { b: append('b'), a: append('a') },
@@ -435,13 +421,10 @@ describe('Record', () => {
   })
 
   it('insertAt', () => {
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.insertAt('a', 1)({}), { a: 1 })
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.insertAt('c', 3)({ a: 1, b: 2 }), { a: 1, b: 2, c: 3 })
     // should return the same reference if the value is already there
     const x = { a: 1 }
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.insertAt('a', 1)(x), x)
   })
 
@@ -481,7 +464,6 @@ describe('Record', () => {
   })
 
   it('fromFoldableMap', () => {
-    // tslint:disable-next-line: readonly-array
     const zipObject = <K extends string, A>(keys: Array<K>, values: Array<A>): Record<K, A> =>
       _.fromFoldableMap(Se.last<A>(), A.Foldable)(A.zip(keys, values), identity)
 
@@ -492,7 +474,6 @@ describe('Record', () => {
       readonly name: string
     }
 
-    // tslint:disable-next-line: readonly-array
     const users: Array<User> = [
       { id: 'id1', name: 'name1' },
       { id: 'id2', name: 'name2' },
@@ -514,7 +495,6 @@ describe('Record', () => {
     U.deepStrictEqual(Sh.show({ a: 'a' }), `{ "a": "a" }`)
     U.deepStrictEqual(Sh.show({ a: 'a', b: 'b' }), `{ "a": "a", "b": "b" }`)
 
-    // tslint:disable-next-line: deprecation
     const DepSh = _.getShow(S.Show)
     U.deepStrictEqual(DepSh.show({}), `{}`)
     U.deepStrictEqual(DepSh.show({ a: 'a' }), `{ "a": "a" }`)

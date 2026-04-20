@@ -1,6 +1,6 @@
-import * as U from './util'
-import * as _ from '../src/string'
 import { pipe } from '../src/function'
+import * as _ from '../src/string'
+import * as U from './util'
 
 describe('string', () => {
   // -------------------------------------------------------------------------------------
@@ -23,6 +23,12 @@ describe('string', () => {
     U.deepStrictEqual(_.isEmpty(_.empty), true)
     U.deepStrictEqual(_.isEmpty(''), true)
     U.deepStrictEqual(_.isEmpty('a'), false)
+  })
+
+  it('isString', () => {
+    U.deepStrictEqual(_.isString(_.empty), true)
+    U.deepStrictEqual(_.isString('a'), true)
+    U.deepStrictEqual(_.isString(1), false)
   })
 
   it('size', () => {

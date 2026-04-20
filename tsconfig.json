@@ -15,7 +15,15 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
-    "stripInternal": true
+    "stripInternal": true,
+    "skipLibCheck": true,
+    "types": ["vitest/globals"],
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
   },
-  "include": ["./src", "./test", "./scripts", "./perf"]
+  "include": ["./src", "./test", "./scripts", "./perf", "./dtslint"],
+  "exclude": ["./node_modules"]
 }

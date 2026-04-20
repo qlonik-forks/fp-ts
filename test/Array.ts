@@ -1,5 +1,6 @@
 import * as fc from 'fast-check'
 import { isDeepStrictEqual } from 'util'
+
 import * as _ from '../src/Array'
 import * as B from '../src/boolean'
 import * as E from '../src/Either'
@@ -122,6 +123,20 @@ describe('Array', () => {
 
     it('apSecond', () => {
       U.deepStrictEqual(pipe([1, 2], _.apSecond(['a', 'b', 'c'])), ['a', 'b', 'c', 'a', 'b', 'c'])
+    })
+
+    it('flatMap', () => {
+      U.deepStrictEqual(
+        pipe(
+          [1, 2, 3],
+          _.flatMap((n) => [n, n + 1])
+        ),
+        [1, 2, 2, 3, 3, 4]
+      )
+      U.deepStrictEqual(
+        _.flatMap([1, 2, 3], (n) => [n, n + 1]),
+        [1, 2, 2, 3, 3, 4]
+      )
     })
 
     it('chain', () => {
@@ -377,21 +392,15 @@ describe('Array', () => {
   })
 
   it('cons', () => {
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.cons(0, [1, 2, 3]), [0, 1, 2, 3])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.cons([1], [[2]]), [[1], [2]])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(pipe([1, 2, 3], _.cons(0)), [0, 1, 2, 3])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(pipe([[2]], _.cons([1])), [[1], [2]])
   })
 
   it('snoc', () => {
     const as: Array<number> = [1, 2, 3]
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.snoc(as, 4), [1, 2, 3, 4])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.snoc([[1]], [2]), [[1], [2]])
   })
 
@@ -973,7 +982,7 @@ describe('Array', () => {
         fc.property(
           fc.array(fc.integer()).filter((xs) => xs.length % 2 === 0), // Ensures `xs.length` is even
           fc.array(fc.integer()),
-          fc.integer(1, 1).map((x) => x * 2), // Generates `n` to be even so that it evenly divides `xs`
+          fc.integer({ min: 1, max: 1 }).map((x) => x * 2), // Generates `n` to be even so that it evenly divides `xs`
           (xs, ys, n) => {
             const as = _.chunksOf(n)(xs).concat(_.chunksOf(n)(ys))
             const bs = _.chunksOf(n)(xs.concat(ys))
@@ -1001,22 +1010,14 @@ describe('Array', () => {
   })
 
   it('range', () => {
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.range(0, 0), [0])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.range(0, 1), [0, 1])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.range(1, 5), [1, 2, 3, 4, 5])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.range(10, 15), [10, 11, 12, 13, 14, 15])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.range(-1, 0), [-1, 0])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.range(-5, -1), [-5, -4, -3, -2, -1])
     // out of bound
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.range(2, 1), [2])
-    // tslint:disable-next-line: deprecation
     U.deepStrictEqual(_.range(-1, -2), [-1])
   })
 
@@ -1207,5 +1208,11 @@ describe('Array', () => {
     const g = _.fromOptionK(f)
     U.deepStrictEqual(g(0), [])
     U.deepStrictEqual(g(1), [1])
+  })
+
+  it('isOutOfBound', () => {
+    U.deepStrictEqual(_.isOutOfBound(0, ['a']), false)
+    U.deepStrictEqual(_.isOutOfBound(100, ['a']), true)
+    U.deepStrictEqual(_.isOutOfBound(-1, ['a']), true)
   })
 })

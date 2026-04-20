@@ -15,14 +15,16 @@ import { Semiring } from './Semiring'
  * @category instances
  * @since 2.10.0
  */
-export const getBooleanAlgebra = <B>(B: BooleanAlgebra<B>) => <A = never>(): BooleanAlgebra<(a: A) => B> => ({
-  meet: (x, y) => (a) => B.meet(x(a), y(a)),
-  join: (x, y) => (a) => B.join(x(a), y(a)),
-  zero: () => B.zero,
-  one: () => B.one,
-  implies: (x, y) => (a) => B.implies(x(a), y(a)),
-  not: (x) => (a) => B.not(x(a))
-})
+export const getBooleanAlgebra =
+  <B>(B: BooleanAlgebra<B>) =>
+  <A = never>(): BooleanAlgebra<(a: A) => B> => ({
+    meet: (x, y) => (a) => B.meet(x(a), y(a)),
+    join: (x, y) => (a) => B.join(x(a), y(a)),
+    zero: () => B.zero,
+    one: () => B.one,
+    implies: (x, y) => (a) => B.implies(x(a), y(a)),
+    not: (x) => (a) => B.not(x(a))
+  })
 
 /**
  * Unary functions form a semigroup as long as you can provide a semigroup for the codomain.
@@ -47,9 +49,11 @@ export const getBooleanAlgebra = <B>(B: BooleanAlgebra<B>) => <A = never>(): Boo
  * @category instances
  * @since 2.10.0
  */
-export const getSemigroup = <S>(S: Semigroup<S>) => <A = never>(): Semigroup<(a: A) => S> => ({
-  concat: (f, g) => (a) => S.concat(f(a), g(a))
-})
+export const getSemigroup =
+  <S>(S: Semigroup<S>) =>
+  <A = never>(): Semigroup<(a: A) => S> => ({
+    concat: (f, g) => (a) => S.concat(f(a), g(a))
+  })
 
 /**
  * Unary functions form a monoid as long as you can provide a monoid for the codomain.
@@ -116,16 +120,10 @@ export const getRing = <A, B>(R: Ring<B>): Ring<(a: A) => B> => {
 /**
  * @since 2.11.0
  */
-export const apply = <A>(a: A) => <B>(f: (a: A) => B): B => f(a)
-
-/**
- * A *thunk*
- *
- * @since 2.0.0
- */
-export interface Lazy<A> {
-  (): A
-}
+export const apply =
+  <A>(a: A) =>
+  <B>(f: (a: A) => B): B =>
+    f(a)
 
 /**
  * @example
@@ -154,7 +152,7 @@ export const unsafeCoerce: <A, B>(a: A) => B = identity as any
 /**
  * @since 2.0.0
  */
-export function constant<A>(a: A): Lazy<A> {
+export function constant<A>(a: A): LazyArg<A> {
   return () => a
 }
 
@@ -163,51 +161,59 @@ export function constant<A>(a: A): Lazy<A> {
  *
  * @since 2.0.0
  */
-export const constTrue: Lazy<boolean> =
-  /*#__PURE__*/
-  constant(true)
+export const constTrue: LazyArg<boolean> = /*#__PURE__*/ constant(true)
 
 /**
  * A thunk that returns always `false`.
  *
  * @since 2.0.0
  */
-export const constFalse: Lazy<boolean> =
-  /*#__PURE__*/
-  constant(false)
+export const constFalse: LazyArg<boolean> = /*#__PURE__*/ constant(false)
 
 /**
  * A thunk that returns always `null`.
  *
  * @since 2.0.0
  */
-export const constNull: Lazy<null> =
-  /*#__PURE__*/
-  constant(null)
+export const constNull: LazyArg<null> = /*#__PURE__*/ constant(null)
 
 /**
  * A thunk that returns always `undefined`.
  *
  * @since 2.0.0
  */
-export const constUndefined: Lazy<undefined> =
-  /*#__PURE__*/
-  constant(undefined)
+export const constUndefined: LazyArg<undefined> = /*#__PURE__*/ constant(undefined)
 
 /**
  * A thunk that returns always `void`.
  *
  * @since 2.0.0
  */
-export const constVoid: Lazy<void> = constUndefined
+export const constVoid: LazyArg<void> = constUndefined
 
 /**
- * Flips the order of the arguments of a function of two arguments.
+ * Flips the arguments of a curried function.
+ *
+ * @example
+ * import { flip } from 'fp-ts/function'
+ *
+ * const f = (a: number) => (b: string) => a - b.length
+ *
+ * assert.strictEqual(flip(f)('aaa')(2), -1)
  *
  * @since 2.0.0
  */
-export function flip<A, B, C>(f: (a: A, b: B) => C): (b: B, a: A) => C {
-  return (b, a) => f(a, b)
+export function flip<A, B, C>(f: (a: A) => (b: B) => C): (b: B) => (a: A) => C
+/** @deprecated */
+export function flip<A, B, C>(f: (a: A, b: B) => C): (b: B, a: A) => C
+export function flip(f: Function): Function {
+  return (...args: Array<any>) => {
+    if (args.length > 1) {
+      return f(args[1], args[0])
+    }
+
+    return (a: any) => f(a)(args[0])
+  }
 }
 
 /**
@@ -672,12 +678,13 @@ export function pipe(
       return gh!(fg!(ef!(de!(cd!(bc!(ab!(a)))))))
     case 9:
       return hi!(gh!(fg!(ef!(de!(cd!(bc!(ab!(a))))))))
-    default:
+    default: {
       let ret = arguments[0]
       for (let i = 1; i < arguments.length; i++) {
         ret = arguments[i](ret)
       }
       return ret
+    }
   }
 }
 
@@ -697,11 +704,10 @@ export const SK = <A, B>(_: A, b: B): B => b
 // deprecated
 // -------------------------------------------------------------------------------------
 
-// tslint:disable: deprecation
-
 /**
  * Use `Refinement` module instead.
  *
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -712,6 +718,7 @@ export interface Refinement<A, B extends A> {
 /**
  * Use `Predicate` module instead.
  *
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -722,6 +729,7 @@ export interface Predicate<A> {
 /**
  * Use `Predicate` module instead.
  *
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -732,6 +740,7 @@ export function not<A>(predicate: Predicate<A>): Predicate<A> {
 /**
  * Use `Endomorphism` module instead.
  *
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */
@@ -742,7 +751,7 @@ export interface Endomorphism<A> {
 /**
  * Use `Endomorphism` module instead.
  *
- * @category instances
+ * @category zone of death
  * @since 2.10.0
  * @deprecated
  */
@@ -750,3 +759,47 @@ export const getEndomorphismMonoid = <A = never>(): Monoid<Endomorphism<A>> => (
   concat: (first, second) => flow(first, second),
   empty: identity
 })
+
+/**
+ * A lazy argument.
+ *
+ * @since 2.15.0
+ */
+export interface LazyArg<A> {
+  (): A
+}
+
+/** @internal */
+export const dual: {
+  <DataLast extends (...args: Array<any>) => any, DataFirst extends (...args: Array<any>) => any>(
+    arity: Parameters<DataFirst>['length'],
+    body: DataFirst
+  ): DataLast & DataFirst
+  <DataLast extends (...args: Array<any>) => any, DataFirst extends (...args: Array<any>) => any>(
+    isDataFirst: (args: IArguments) => boolean,
+    body: DataFirst
+  ): DataLast & DataFirst
+} = (arity: any, body: any) => {
+  const isDataFirst: (args: IArguments) => boolean = typeof arity === 'number' ? (args) => args.length >= arity : arity
+  return function (this: any) {
+    const args = Array.from(arguments)
+    if (isDataFirst(arguments)) {
+      return body.apply(this, args)
+    }
+    return (self: any) => body(self, ...args)
+  }
+}
+
+// -------------------------------------------------------------------------------------
+// lagacy
+// -------------------------------------------------------------------------------------
+
+/**
+ * Use `LazyArg` instead.
+ *
+ * @category lagacy
+ * @since 2.0.0
+ */
+export interface Lazy<A> {
+  (): A
+}

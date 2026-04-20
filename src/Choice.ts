@@ -28,18 +28,18 @@
  *
  * @since 2.0.0
  */
-import { Either } from './Either'
-import { HKT2, Kind2, Kind3, URIS2, URIS3, URIS4, Kind4 } from './HKT'
-import { Profunctor, Profunctor2, Profunctor3, Profunctor4 } from './Profunctor'
 import { Category, Category2, Category3, Category4 } from './Category'
+import { Either } from './Either'
 import { identity } from './function'
+import { HKT2, Kind2, Kind3, Kind4, URIS2, URIS3, URIS4 } from './HKT'
+import { Profunctor, Profunctor2, Profunctor3, Profunctor4 } from './Profunctor'
 
 // -------------------------------------------------------------------------------------
 // model
 // -------------------------------------------------------------------------------------
 
 /**
- * @category type classes
+ * @category model
  * @since 2.0.0
  */
 export interface Choice<F> extends Profunctor<F> {
@@ -48,7 +48,7 @@ export interface Choice<F> extends Profunctor<F> {
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.0.0
  */
 export interface Choice2<F extends URIS2> extends Profunctor2<F> {
@@ -57,7 +57,7 @@ export interface Choice2<F extends URIS2> extends Profunctor2<F> {
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.0.0
  */
 export interface Choice3<F extends URIS3> extends Profunctor3<F> {
@@ -66,7 +66,7 @@ export interface Choice3<F extends URIS3> extends Profunctor3<F> {
 }
 
 /**
- * @category type classes
+ * @category model
  * @since 2.0.0
  */
 export interface Choice4<F extends URIS4> extends Profunctor4<F> {
@@ -173,6 +173,7 @@ export function fanIn<P>(
 /**
  * Use [`split`](#split) instead.
  *
+ * @category zone of death
  * @since 2.0.0
  * @deprecated
  */

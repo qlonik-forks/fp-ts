@@ -1,13 +1,13 @@
-import * as U from './util'
 import * as E from '../src/Either'
 import { identity, pipe } from '../src/function'
 import * as N from '../src/number'
 import * as _ from '../src/Option'
 import * as RA from '../src/ReadonlyArray'
+import { ReadonlyNonEmptyArray } from '../src/ReadonlyNonEmptyArray'
+import { separated } from '../src/Separated'
 import * as S from '../src/string'
 import * as T from '../src/Task'
-import { separated } from '../src/Separated'
-import { ReadonlyNonEmptyArray } from '../src/ReadonlyNonEmptyArray'
+import * as U from './util'
 
 const p = (n: number): boolean => n > 2
 
@@ -38,6 +38,20 @@ describe('Option', () => {
       U.deepStrictEqual(pipe(_.some('a'), _.apSecond(_.some('b'))), _.some('b'))
     })
 
+    it('flatMap', () => {
+      const f = (n: number) => _.some(n * 2)
+      const g = () => _.none
+      U.deepStrictEqual(pipe(_.some(1), _.flatMap(f)), _.some(2))
+      U.deepStrictEqual(pipe(_.none, _.flatMap(f)), _.none)
+      U.deepStrictEqual(pipe(_.some(1), _.flatMap(g)), _.none)
+      U.deepStrictEqual(pipe(_.none, _.flatMap(g)), _.none)
+
+      U.deepStrictEqual(_.flatMap(_.some(1), f), _.some(2))
+      U.deepStrictEqual(_.flatMap(_.none, f), _.none)
+      U.deepStrictEqual(_.flatMap(_.some(1), g), _.none)
+      U.deepStrictEqual(_.flatMap(_.none, g), _.none)
+    })
+
     it('chain', () => {
       const f = (n: number) => _.some(n * 2)
       const g = () => _.none
@@ -45,6 +59,12 @@ describe('Option', () => {
       U.deepStrictEqual(pipe(_.none, _.chain(f)), _.none)
       U.deepStrictEqual(pipe(_.some(1), _.chain(g)), _.none)
       U.deepStrictEqual(pipe(_.none, _.chain(g)), _.none)
+    })
+
+    it('tap', () => {
+      const f = (n: number) => _.some(n * 2)
+      U.deepStrictEqual(pipe(_.some(1), _.tap(f)), _.some(1))
+      U.deepStrictEqual(_.tap(_.some(1), f), _.some(1))
     })
 
     it('chainFirst', () => {
@@ -277,6 +297,7 @@ describe('Option', () => {
   it('getOrd', () => {
     const OS = _.getOrd(S.Ord)
     U.deepStrictEqual(OS.compare(_.none, _.none), 0)
+    U.deepStrictEqual(OS.compare(_.none, { _tag: 'None' }), 0)
     U.deepStrictEqual(OS.compare(_.some('a'), _.none), 1)
     U.deepStrictEqual(OS.compare(_.none, _.some('a')), -1)
     U.deepStrictEqual(OS.compare(_.some('a'), _.some('a')), 0)
@@ -353,7 +374,6 @@ describe('Option', () => {
   })
 
   it('getApplySemigroup', () => {
-    // tslint:disable-next-line: deprecation
     const S = _.getApplySemigroup(N.SemigroupSum)
     U.deepStrictEqual(S.concat(_.none, _.none), _.none)
     U.deepStrictEqual(S.concat(_.some(1), _.none), _.none)
@@ -362,7 +382,6 @@ describe('Option', () => {
   })
 
   it('getApplyMonoid', () => {
-    // tslint:disable-next-line: deprecation
     const M = _.getApplyMonoid(N.MonoidSum)
     U.deepStrictEqual(M.concat(M.empty, _.none), _.none)
     U.deepStrictEqual(M.concat(_.none, M.empty), _.none)
@@ -371,7 +390,6 @@ describe('Option', () => {
   })
 
   it('getFirstMonoid', () => {
-    // tslint:disable-next-line: deprecation
     const M = _.getFirstMonoid<number>()
     U.deepStrictEqual(M.concat(_.none, _.none), _.none)
     U.deepStrictEqual(M.concat(_.some(1), _.none), _.some(1))
@@ -380,7 +398,6 @@ describe('Option', () => {
   })
 
   it('getLastMonoid', () => {
-    // tslint:disable-next-line: deprecation
     const M = _.getLastMonoid<number>()
     U.deepStrictEqual(M.concat(_.none, _.none), _.none)
     U.deepStrictEqual(M.concat(_.some(1), _.none), _.some(1))
@@ -427,14 +444,12 @@ describe('Option', () => {
 
   it('getRefinement', () => {
     const f = (s: string | number): _.Option<string> => (typeof s === 'string' ? _.some(s) : _.none)
-    // tslint:disable-next-line: deprecation
     const isString = _.getRefinement(f)
     U.deepStrictEqual(isString('s'), true)
     U.deepStrictEqual(isString(1), false)
     type A = { readonly type: 'A' }
     type B = { readonly type: 'B' }
     type C = A | B
-    // tslint:disable-next-line: deprecation
     const isA = _.getRefinement<C, A>((c) => (c.type === 'A' ? _.some(c) : _.none))
     U.deepStrictEqual(isA({ type: 'A' }), true)
     U.deepStrictEqual(isA({ type: 'B' }), false)
@@ -465,9 +480,10 @@ describe('Option', () => {
       pipe(
         _.some(1),
         _.bindTo('a'),
-        _.bind('b', () => _.some('b'))
+        _.bind('b', () => _.some('b')),
+        _.let('c', ({ a, b }) => [a, b])
       ),
-      _.some({ a: 1, b: 'b' })
+      _.some({ a: 1, b: 'b', c: [1, 'b'] })
     )
   })
 
@@ -491,11 +507,8 @@ describe('Option', () => {
       U.deepStrictEqual(pipe(['a', ''], f), _.none)
     })
 
-    // old
     it('sequenceArray', () => {
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(pipe([_.of(1), _.of(2)], _.sequenceArray), _.some([1, 2]))
-      // tslint:disable-next-line: deprecation
       U.deepStrictEqual(pipe([_.of(1), _.none], _.sequenceArray), _.none)
     })
   })
@@ -533,10 +546,27 @@ describe('Option', () => {
     )
   })
 
+  it('tapEither', async () => {
+    const f = (s: string) => E.right(s.length)
+    U.deepStrictEqual(pipe(_.some('a'), _.tapEither(f)), _.some('a'))
+    const g = (s: string) => E.left(s.length)
+    U.deepStrictEqual(pipe(_.some('a'), _.tapEither(g)), _.none)
+  })
+
   it('chainFirstEitherK', async () => {
     const f = (s: string) => E.right(s.length)
     U.deepStrictEqual(pipe(_.some('a'), _.chainFirstEitherK(f)), _.some('a'))
     const g = (s: string) => E.left(s.length)
     U.deepStrictEqual(pipe(_.some('a'), _.chainFirstEitherK(g)), _.none)
+  })
+
+  it('as', () => {
+    U.deepStrictEqual(pipe(_.some('a'), _.as('b')), _.some('b'))
+    U.deepStrictEqual(_.as(_.of('a'), 'b'), _.some('b'))
+    U.deepStrictEqual(_.as(_.none, 'b'), _.none)
+  })
+
+  it('asUnit', () => {
+    U.deepStrictEqual(pipe(_.some('a'), _.asUnit), _.some(undefined))
   })
 })

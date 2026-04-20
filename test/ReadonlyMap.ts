@@ -1,4 +1,5 @@
 import * as assert from 'assert'
+
 import { Either, left, right } from '../src/Either'
 import { Eq, fromEquals } from '../src/Eq'
 import { identity, pipe } from '../src/function'
@@ -124,10 +125,7 @@ describe('ReadonlyMap', () => {
           ]),
           _.partitionMap(f)
         ),
-        separated(
-          new Map<string, number>([['a', 0]]),
-          new Map<string, number>([['b', 4]])
-        )
+        separated(new Map<string, number>([['a', 0]]), new Map<string, number>([['b', 4]]))
       )
     })
 
@@ -142,10 +140,7 @@ describe('ReadonlyMap', () => {
           ]),
           _.partition(p)
         ),
-        separated(
-          new Map<string, number>([['a', 1]]),
-          new Map<string, number>([['b', 3]])
-        )
+        separated(new Map<string, number>([['a', 1]]), new Map<string, number>([['b', 3]]))
       )
     })
   })
@@ -463,14 +458,12 @@ describe('ReadonlyMap', () => {
       [{ id: 'b' }, 2],
       [{ id: 'c' }, 3]
     ])
-    // tslint:disable-next-line: deprecation
     const insertS = _.insertAt(eqUser)
     U.deepStrictEqual(insertS({ id: 'a' }, 1)(emptyMap), a1)
     U.deepStrictEqual(insertS({ id: 'a' }, 1)(a1b2), a1b2)
     U.deepStrictEqual(insertS({ id: 'a' }, 2)(a1b2), a2b2)
     U.deepStrictEqual(insertS({ id: 'c' }, 3)(a1b2), a1b2c3)
 
-    // tslint:disable-next-line: deprecation
     const insert = _.insertAt(eqKey)
     U.deepStrictEqual(insert({ id: 1 }, { value: 1 })(_.empty), new Map([[{ id: 1 }, { value: 1 }]]))
     const x = insert({ id: 1 }, value1)(repo)
@@ -631,10 +624,7 @@ describe('ReadonlyMap', () => {
   })
 
   it('singleton', () => {
-    U.deepStrictEqual(
-      _.singleton('k1', 0),
-      new Map<string, number>([['k1', 0]])
-    )
+    U.deepStrictEqual(_.singleton('k1', 0), new Map<string, number>([['k1', 0]]))
   })
 
   it('getEq', () => {
@@ -824,11 +814,12 @@ describe('ReadonlyMap', () => {
 
     it('traverseWithIndex should sort the keys', () => {
       const W = _.getWitherable(S.Ord)
-      // tslint:disable-next-line: readonly-array
       const log: Array<string> = []
-      const append = (message: string): IO.IO<void> => () => {
-        log.push(message)
-      }
+      const append =
+        (message: string): IO.IO<void> =>
+        () => {
+          log.push(message)
+        }
 
       W.traverseWithIndex(IO.Applicative)(
         new Map([
@@ -1092,12 +1083,7 @@ describe('ReadonlyMap', () => {
     const m1 = new Map<User, string>([])
     U.deepStrictEqual(_.updateAt(eqUser)({ id: 'a' }, 'a')(m1), O.none)
     const m2 = new Map<User, string>([[{ id: 'a' }, 'b']])
-    U.deepStrictEqual(
-      _.updateAt(eqUser)({ id: 'a' }, 'a')(m2),
-      O.some(
-        new Map<User, string>([[{ id: 'a' }, 'a']])
-      )
-    )
+    U.deepStrictEqual(_.updateAt(eqUser)({ id: 'a' }, 'a')(m2), O.some(new Map<User, string>([[{ id: 'a' }, 'a']])))
   })
 
   it('modifyAt', () => {
@@ -1106,9 +1092,7 @@ describe('ReadonlyMap', () => {
     const m2 = new Map<User, number>([[{ id: 'a' }, 1]])
     U.deepStrictEqual(
       _.modifyAt(eqUser)({ id: 'a' }, (n: number) => n * 2)(m2),
-      O.some(
-        new Map<User, number>([[{ id: 'a' }, 2]])
-      )
+      O.some(new Map<User, number>([[{ id: 'a' }, 2]]))
     )
     // should return the same reference if nothing changed
     const input: ReadonlyMap<string, number> = new Map([['a', 1]])

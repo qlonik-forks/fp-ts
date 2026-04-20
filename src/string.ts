@@ -3,11 +3,11 @@
  */
 import * as E from './Eq'
 import * as M from './Monoid'
-import * as S from './Semigroup'
 import * as O from './Ord'
-import * as Sh from './Show'
+import { isNonEmpty, ReadonlyNonEmptyArray } from './ReadonlyNonEmptyArray'
 import { Refinement } from './Refinement'
-import { ReadonlyNonEmptyArray, isNonEmpty } from './ReadonlyNonEmptyArray'
+import * as S from './Semigroup'
+import * as Sh from './Show'
 
 // -------------------------------------------------------------------------------------
 // instances
@@ -47,7 +47,7 @@ export const Semigroup: S.Semigroup<string> = {
  *
  * @since 2.10.0
  */
-export const empty: string = ''
+export const empty = ''
 
 /**
  * `string` monoid under concatenation.
@@ -124,7 +124,6 @@ export const isString: Refinement<unknown, string> = (u: unknown): u is string =
  *
  * assert.deepStrictEqual(pipe('a', S.toUpperCase), 'A')
  *
- * @category combinators
  * @since 2.11.0
  */
 export const toUpperCase = (s: string): string => s.toUpperCase()
@@ -136,7 +135,6 @@ export const toUpperCase = (s: string): string => s.toUpperCase()
  *
  * assert.deepStrictEqual(pipe('A', S.toLowerCase), 'a')
  *
- * @category combinators
  * @since 2.11.0
  */
 export const toLowerCase = (s: string): string => s.toLowerCase()
@@ -148,11 +146,12 @@ export const toLowerCase = (s: string): string => s.toLowerCase()
  *
  * assert.deepStrictEqual(pipe('abc', S.replace('b', 'd')), 'adc')
  *
- * @category combinators
  * @since 2.11.0
  */
-export const replace = (searchValue: string | RegExp, replaceValue: string) => (s: string): string =>
-  s.replace(searchValue, replaceValue)
+export const replace =
+  (searchValue: string | RegExp, replaceValue: string) =>
+  (s: string): string =>
+    s.replace(searchValue, replaceValue)
 
 /**
  * @example
@@ -161,7 +160,6 @@ export const replace = (searchValue: string | RegExp, replaceValue: string) => (
  *
  * assert.deepStrictEqual(pipe(' a ', S.trim), 'a')
  *
- * @category combinators
  * @since 2.11.0
  */
 export const trim = (s: string): string => s.trim()
@@ -173,7 +171,6 @@ export const trim = (s: string): string => s.trim()
  *
  * assert.deepStrictEqual(pipe(' a ', S.trimLeft), 'a ')
  *
- * @category combinators
  * @since 2.11.0
  */
 export const trimLeft = (s: string): string => s.trimLeft()
@@ -185,7 +182,6 @@ export const trimLeft = (s: string): string => s.trimLeft()
  *
  * assert.deepStrictEqual(pipe(' a ', S.trimRight), ' a')
  *
- * @category combinators
  * @since 2.11.0
  */
 export const trimRight = (s: string): string => s.trimRight()
@@ -197,10 +193,12 @@ export const trimRight = (s: string): string => s.trimRight()
  *
  * assert.deepStrictEqual(pipe('abcd', S.slice(1, 3)), 'bc')
  *
- * @category combinators
  * @since 2.11.0
  */
-export const slice = (start: number, end: number) => (s: string): string => s.slice(start, end)
+export const slice =
+  (start: number, end: number) =>
+  (s: string): string =>
+    s.slice(start, end)
 
 // -------------------------------------------------------------------------------------
 // utils
@@ -243,10 +241,12 @@ export const size = (s: string): number => s.length
  *
  * @since 2.11.0
  */
-export const split = (separator: string | RegExp) => (s: string): ReadonlyNonEmptyArray<string> => {
-  const out = s.split(separator)
-  return isNonEmpty(out) ? out : [s]
-}
+export const split =
+  (separator: string | RegExp) =>
+  (s: string): ReadonlyNonEmptyArray<string> => {
+    const out = s.split(separator)
+    return isNonEmpty(out) ? out : [s]
+  }
 
 /**
  * @example
@@ -258,8 +258,10 @@ export const split = (separator: string | RegExp) => (s: string): ReadonlyNonEmp
  *
  * @since 2.11.0
  */
-export const includes = (searchString: string, position?: number) => (s: string): boolean =>
-  s.includes(searchString, position)
+export const includes =
+  (searchString: string, position?: number) =>
+  (s: string): boolean =>
+    s.includes(searchString, position)
 
 /**
  * @example
@@ -271,8 +273,10 @@ export const includes = (searchString: string, position?: number) => (s: string)
  *
  * @since 2.11.0
  */
-export const startsWith = (searchString: string, position?: number) => (s: string): boolean =>
-  s.startsWith(searchString, position)
+export const startsWith =
+  (searchString: string, position?: number) =>
+  (s: string): boolean =>
+    s.startsWith(searchString, position)
 
 /**
  * @example
@@ -284,5 +288,7 @@ export const startsWith = (searchString: string, position?: number) => (s: strin
  *
  * @since 2.11.0
  */
-export const endsWith = (searchString: string, position?: number) => (s: string): boolean =>
-  s.endsWith(searchString, position)
+export const endsWith =
+  (searchString: string, position?: number) =>
+  (s: string): boolean =>
+    s.endsWith(searchString, position)

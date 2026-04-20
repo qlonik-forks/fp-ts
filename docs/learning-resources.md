@@ -10,6 +10,8 @@ has_toc: false
 
 - [Mostly adequate guide to FP](https://github.com/MostlyAdequate/mostly-adequate-guide) by [@DrBoolean](https://github.com/DrBoolean)
 - [The State monad](https://paulgray.net/the-state-monad/) by Paul Gray
+- [Functional Programming with TypeScript](https://www.youtube.com/playlist?list=PLuPevXgCPUIMbCxBEnc1dNwboH6e2ImQo) by Sahand Javid
+- [fp-ts Tutorial series on YouTube](https://www.youtube.com/playlist?list=PLUMXrUa_EuePN94nJ2hAui5nWDj8RO3lH) by [@MrFunctor](https://github.com/MrFunctor)
 
 ## Getting started with fp-ts series
 
@@ -51,7 +53,8 @@ has_toc: false
 ## Community Blog Posts
 
 - [When An Error Is Not An Exception](https://dev.to/vncz/forewords-and-domain-model-1p13) — How we rewrote the core of Prism to make it almost totally functional
-- [Introduction series to FP-TS](https://ybogomolov.me/01-higher-kinded-types/) by Yuriy Bogomolov
+- [Introduction series to FP-TS](https://ybogomolov.me/01-higher-kinded-types) by Yuriy Bogomolov
 - [The ReaderTaskMonad](https://andywhite.xyz/posts/) by Andy White
-- [FP-TS for HTTP-requests](https://kimmosaaskilahti.fi/blog/2019-08-29-fp-ts/) by Kimmo Sasskilahti
+- [FP-TS for HTTP-requests](https://kimmosaaskilahti.fi/blog/2019/08/29/using-fp-ts-for-http-requests-and-validation/) by Kimmo Sasskilahti
 - [Basic introduction to FP-TS](https://davetayls.me/blog/2018/06/09/fp-ts-02-handling-error-cases) by Dave Tayls
+- [Practical guide to FP-TS](https://rlee.dev/practical-guide-to-fp-ts-part-1) by Ryan Lee
